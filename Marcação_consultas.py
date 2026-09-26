@@ -18,6 +18,8 @@ If your data lives on a specific tab (not the first one), set GID below
 to that tab's gid (found in the sheet's URL after "gid=").
 """
 
+import calendar as pycal
+import html as html_lib
 import io
 import re
 from datetime import datetime
@@ -41,6 +43,9 @@ COL_MES = "Mês"
 COL_PROCESSO = "Processo"
 COL_MEDICO = "Médico"
 COL_BLOCO = "Bloco"
+COL_HORA = "Hora"
+COL_ESPECIALIDADE = "Especialidade"
+COL_INTERVENCAO = "Intervenção"
 
 MESES_PT = [
     "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
@@ -166,6 +171,68 @@ st.markdown(
             margin: 0;
             opacity: 0.9;
             font-size: 0.9rem;
+        }}
+
+        /* --- Calendar tab --- */
+        .cal-grid {{
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 6px;
+            margin-top: 8px;
+        }}
+        .cal-dow {{
+            text-align: center;
+            font-weight: 600;
+            color: {PRIMARY_DARK};
+            padding: 4px 0;
+            font-size: 0.85rem;
+        }}
+        .cal-cell {{
+            background-color: {CARD_BG};
+            border: 1px solid {GRID};
+            border-radius: 8px;
+            min-height: 130px;
+            padding: 6px;
+            display: flex;
+            flex-direction: column;
+        }}
+        .cal-cell.empty {{
+            background-color: {SIDEBAR_BG};
+            border: 1px dashed {GRID};
+        }}
+        .cal-cell.today {{
+            border: 2px solid {ACCENT};
+        }}
+        .cal-daynum {{
+            font-weight: 700;
+            color: {PRIMARY_DARK};
+            font-size: 0.85rem;
+            margin-bottom: 4px;
+        }}
+        .cal-events {{
+            overflow-y: auto;
+            max-height: 105px;
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }}
+        .cal-event {{
+            background-color: {PRIMARY};
+            color: #FFFFFF;
+            font-size: 0.72rem;
+            line-height: 1.2;
+            padding: 2px 5px;
+            border-radius: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            cursor: default;
+        }}
+        .cal-event:nth-child(odd) {{
+            background-color: {ACCENT};
+        }}
+        .cal-event:hover {{
+            filter: brightness(1.1);
         }}
     </style>
     """,
@@ -359,69 +426,6 @@ if st.sidebar.button("🚪 Terminar sessão"):
     st.session_state.authenticated = False
     st.rerun()
 
-# --------------------------------------------------------------------------
-# KPI METRICS
-# --------------------------------------------------------------------------
-k1, k2, k3, k4 = st.columns(4)
-k1.metric("Total de Cirurgias", len(filtered))
-k2.metric("Médicos Distintos", filtered[COL_MEDICO].nunique() if COL_MEDICO in filtered.columns else "—")
-k3.metric("Blocos em Uso", filtered[COL_BLOCO].nunique() if COL_BLOCO in filtered.columns else "—")
-k4.metric("Processos", filtered[COL_PROCESSO].nunique() if COL_PROCESSO in filtered.columns else "—")
-
-st.markdown("---")
-
-# --------------------------------------------------------------------------
-# CHARTS
-# --------------------------------------------------------------------------
-c1, c2 = st.columns(2)
-
-with c1:
-    if COL_MEDICO in filtered.columns and not filtered.empty:
-        by_med = filtered[COL_MEDICO].value_counts().reset_index()
-        by_med.columns = [COL_MEDICO, "Cirurgias"]
-        fig = px.bar(
-            by_med, x="Cirurgias", y=COL_MEDICO, orientation="h",
-            title="Cirurgias por Médico",
-            color_discrete_sequence=[PRIMARY],
-        )
-        fig.update_layout(
-            plot_bgcolor=CARD_BG, paper_bgcolor=CARD_BG,
-            font_color=TEXT, yaxis=dict(categoryorder="total ascending"),
-        )
-        st.plotly_chart(fig, use_container_width=True)
-
-with c2:
-    if COL_BLOCO in filtered.columns and not filtered.empty:
-        by_bloco = filtered[COL_BLOCO].value_counts().reset_index()
-        by_bloco.columns = [COL_BLOCO, "Cirurgias"]
-        fig2 = px.pie(
-            by_bloco, names=COL_BLOCO, values="Cirurgias",
-            title="Distribuição por Bloco",
-            color_discrete_sequence=HOSPITAL_PALETTE,
-            hole=0.45,
-        )
-        fig2.update_layout(paper_bgcolor=CARD_BG, font_color=TEXT)
-        st.plotly_chart(fig2, use_container_width=True)
-
-if COL_DATA in filtered.columns and filtered[COL_DATA].notna().any():
-    by_day = filtered.dropna(subset=[COL_DATA]).groupby(filtered[COL_DATA].dt.date).size().reset_index()
-    by_day.columns = ["Data", "Cirurgias"]
-    fig3 = px.line(
-        by_day, x="Data", y="Cirurgias", markers=True,
-        title="Cirurgias ao Longo do Tempo",
-        color_discrete_sequence=[ACCENT],
-    )
-    fig3.update_layout(plot_bgcolor=CARD_BG, paper_bgcolor=CARD_BG, font_color=TEXT)
-    st.plotly_chart(fig3, use_container_width=True)
-
-st.markdown("---")
-
-# --------------------------------------------------------------------------
-# DATA TABLE
-# --------------------------------------------------------------------------
-st.markdown("### 📋 Lista de Cirurgias (filtradas)")
-st.dataframe(filtered, use_container_width=True, hide_index=True)
-
 def to_excel_bytes(data: pd.DataFrame) -> bytes:
     buffer = io.BytesIO()
     with pd.ExcelWriter(buffer, engine="openpyxl") as writer:
@@ -429,22 +433,189 @@ def to_excel_bytes(data: pd.DataFrame) -> bytes:
     return buffer.getvalue()
 
 
-dl_col1, dl_col2 = st.columns(2)
-with dl_col1:
-    st.download_button(
-        "⬇️ Descarregar CSV",
-        data=filtered.to_csv(index=False).encode("utf-8-sig"),
-        file_name=f"agenda_cirurgica_{datetime.now().strftime('%Y%m%d_%H%M')}.csv",
-        mime="text/csv",
-        use_container_width=True,
-    )
-with dl_col2:
-    st.download_button(
-        "⬇️ Descarregar Excel",
-        data=to_excel_bytes(filtered),
-        file_name=f"agenda_cirurgica_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx",
-        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        use_container_width=True,
-    )
+def safe(row, col):
+    """Return a clean string for a field, or '—' if missing/empty."""
+    if col not in row.index:
+        return "—"
+    val = row[col]
+    if pd.isna(val) or str(val).strip() == "":
+        return "—"
+    return str(val).strip()
 
-st.caption("Fonte: Google Sheets (ULS Médio Ave) · Atualizado automaticamente a cada 5 minutos.")
+
+tab_dashboard, tab_calendar = st.tabs(["📊 Dashboard", "📅 Calendário"])
+
+# ==========================================================================
+# TAB 1 — DASHBOARD
+# ==========================================================================
+with tab_dashboard:
+    # ---------------- KPI METRICS ----------------
+    k1, k2, k3, k4 = st.columns(4)
+    k1.metric("Total de Cirurgias", len(filtered))
+    k2.metric("Médicos Distintos", filtered[COL_MEDICO].nunique() if COL_MEDICO in filtered.columns else "—")
+    k3.metric("Blocos em Uso", filtered[COL_BLOCO].nunique() if COL_BLOCO in filtered.columns else "—")
+    k4.metric("Processos", filtered[COL_PROCESSO].nunique() if COL_PROCESSO in filtered.columns else "—")
+
+    st.markdown("---")
+
+    # ---------------- CHARTS ----------------
+    c1, c2 = st.columns(2)
+
+    with c1:
+        if COL_MEDICO in filtered.columns and not filtered.empty:
+            by_med = filtered[COL_MEDICO].value_counts().reset_index()
+            by_med.columns = [COL_MEDICO, "Cirurgias"]
+            fig = px.bar(
+                by_med, x="Cirurgias", y=COL_MEDICO, orientation="h",
+                title="Cirurgias por Médico",
+                color_discrete_sequence=[PRIMARY],
+            )
+            fig.update_layout(
+                plot_bgcolor=CARD_BG, paper_bgcolor=CARD_BG,
+                font_color=TEXT, yaxis=dict(categoryorder="total ascending"),
+            )
+            st.plotly_chart(fig, use_container_width=True)
+
+    with c2:
+        if COL_BLOCO in filtered.columns and not filtered.empty:
+            by_bloco = filtered[COL_BLOCO].value_counts().reset_index()
+            by_bloco.columns = [COL_BLOCO, "Cirurgias"]
+            fig2 = px.pie(
+                by_bloco, names=COL_BLOCO, values="Cirurgias",
+                title="Distribuição por Bloco",
+                color_discrete_sequence=HOSPITAL_PALETTE,
+                hole=0.45,
+            )
+            fig2.update_layout(paper_bgcolor=CARD_BG, font_color=TEXT)
+            st.plotly_chart(fig2, use_container_width=True)
+
+    if COL_DATA in filtered.columns and filtered[COL_DATA].notna().any():
+        by_day = filtered.dropna(subset=[COL_DATA]).groupby(filtered[COL_DATA].dt.date).size().reset_index()
+        by_day.columns = ["Data", "Cirurgias"]
+        fig3 = px.line(
+            by_day, x="Data", y="Cirurgias", markers=True,
+            title="Cirurgias ao Longo do Tempo",
+            color_discrete_sequence=[ACCENT],
+        )
+        fig3.update_layout(plot_bgcolor=CARD_BG, paper_bgcolor=CARD_BG, font_color=TEXT)
+        st.plotly_chart(fig3, use_container_width=True)
+
+    st.markdown("---")
+
+    # ---------------- DATA TABLE ----------------
+    st.markdown("### 📋 Lista de Cirurgias (filtradas)")
+    st.dataframe(filtered, use_container_width=True, hide_index=True)
+
+    dl_col1, dl_col2 = st.columns(2)
+    with dl_col1:
+        st.download_button(
+            "⬇️ Descarregar CSV",
+            data=filtered.to_csv(index=False).encode("utf-8-sig"),
+            file_name=f"agenda_cirurgica_{datetime.now().strftime('%Y%m%d_%H%M')}.csv",
+            mime="text/csv",
+            use_container_width=True,
+        )
+    with dl_col2:
+        st.download_button(
+            "⬇️ Descarregar Excel",
+            data=to_excel_bytes(filtered),
+            file_name=f"agenda_cirurgica_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            use_container_width=True,
+        )
+
+    st.caption("Fonte: Google Sheets (ULS Médio Ave) · Atualizado automaticamente a cada 5 minutos.")
+
+# ==========================================================================
+# TAB 2 — CALENDÁRIO (Google Calendar-style month view)
+# ==========================================================================
+with tab_calendar:
+    st.markdown("### 📅 Calendário de Cirurgias")
+    st.caption("Uma linha por cirurgia (Hora · Processo · Especialidade). Passe o rato por cima para ver todos os detalhes.")
+
+    if COL_DATA not in filtered.columns or filtered[COL_DATA].dropna().empty:
+        st.info("Sem datas disponíveis para mostrar no calendário com os filtros atuais.")
+    else:
+        cal_df = filtered.dropna(subset=[COL_DATA]).copy()
+        cal_df["_year"] = cal_df[COL_DATA].dt.year
+        cal_df["_month"] = cal_df[COL_DATA].dt.month
+
+        year_months = sorted(
+            {(int(y), int(m)) for y, m in zip(cal_df["_year"], cal_df["_month"])}
+        )
+
+        if not year_months:
+            st.info("Sem datas disponíveis para mostrar no calendário com os filtros atuais.")
+        else:
+            option_labels = [f"{MESES_PT[m - 1]} {y}" for y, m in year_months]
+
+            today = datetime.now()
+            default_idx = 0
+            for i, (y, m) in enumerate(year_months):
+                if (y, m) <= (today.year, today.month):
+                    default_idx = i
+
+            sel_label = st.selectbox("Mês a visualizar", option_labels, index=default_idx)
+            sel_year, sel_month = year_months[option_labels.index(sel_label)]
+
+            month_events = cal_df[(cal_df["_year"] == sel_year) & (cal_df["_month"] == sel_month)]
+
+            # Sort each day's surgeries by Hora when available
+            if COL_HORA in month_events.columns:
+                month_events = month_events.sort_values(by=[COL_DATA, COL_HORA])
+            else:
+                month_events = month_events.sort_values(by=[COL_DATA])
+
+            events_by_day = {}
+            for _, row in month_events.iterrows():
+                day = row[COL_DATA].day
+                events_by_day.setdefault(day, []).append(row)
+
+            pycal.setfirstweekday(pycal.MONDAY)
+            weeks = pycal.monthcalendar(sel_year, sel_month)
+            dow_labels = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"]
+
+            html_parts = ['<div class="cal-grid">']
+            for lbl in dow_labels:
+                html_parts.append(f'<div class="cal-dow">{lbl}</div>')
+
+            is_current_month = (sel_year == today.year and sel_month == today.month)
+
+            for week in weeks:
+                for day in week:
+                    if day == 0:
+                        html_parts.append('<div class="cal-cell empty"></div>')
+                        continue
+
+                    is_today = is_current_month and day == today.day
+                    cell_classes = "cal-cell" + (" today" if is_today else "")
+
+                    events_html = ""
+                    for row in events_by_day.get(day, []):
+                        hora = safe(row, COL_HORA)
+                        processo = safe(row, COL_PROCESSO)
+                        especialidade = safe(row, COL_ESPECIALIDADE)
+                        intervencao = safe(row, COL_INTERVENCAO)
+                        medico = safe(row, COL_MEDICO)
+                        bloco = safe(row, COL_BLOCO)
+
+                        one_line = html_lib.escape(f"{hora} · {processo} · {especialidade}")
+                        full_detail = html_lib.escape(
+                            f"Hora: {hora}\n"
+                            f"Processo: {processo}\n"
+                            f"Especialidade: {especialidade}\n"
+                            f"Intervenção: {intervencao}\n"
+                            f"Médico: {medico}\n"
+                            f"Bloco: {bloco}"
+                        )
+                        events_html += f'<div class="cal-event" title="{full_detail}">{one_line}</div>'
+
+                    html_parts.append(
+                        f'<div class="{cell_classes}">'
+                        f'<div class="cal-daynum">{day}</div>'
+                        f'<div class="cal-events">{events_html}</div>'
+                        f'</div>'
+                    )
+            html_parts.append('</div>')
+
+            st.markdown("".join(html_parts), unsafe_allow_html=True)
