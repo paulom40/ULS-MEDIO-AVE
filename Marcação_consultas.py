@@ -56,14 +56,15 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-PRIMARY = "#00695C"      # deep clinical teal
-PRIMARY_LIGHT = "#4DB6AC"
-ACCENT = "#0277BD"       # hospital blue
-BG = "#F4F9F9"           # very light mint/white
+PRIMARY = "#0277BD"      # hospital blue
+PRIMARY_DARK = "#01579B"
+ACCENT = "#00897B"       # clinical teal accent
+BG = "#FFFFFF"           # clean white background
+SIDEBAR_BG = "#F2F7FA"   # very light blue-gray
 CARD_BG = "#FFFFFF"
 TEXT = "#1C2B2D"
 WARN = "#D84315"         # soft alert red-orange
-GRID = "#E0F2F1"
+GRID = "#DCE7ED"
 
 st.markdown(
     f"""
@@ -73,24 +74,60 @@ st.markdown(
             color: {TEXT};
         }}
         section[data-testid="stSidebar"] {{
-            background-color: #E0F2F1;
-            border-right: 2px solid {PRIMARY_LIGHT};
+            background-color: {SIDEBAR_BG};
+            border-right: 1px solid {GRID};
+        }}
+        section[data-testid="stSidebar"] * {{
+            color: {TEXT};
         }}
         h1, h2, h3 {{
-            color: {PRIMARY};
+            color: {PRIMARY_DARK};
             font-family: 'Segoe UI', sans-serif;
         }}
+
+        /* --- Fix dark/black input widgets so they match the light theme --- */
+        div[data-baseweb="select"] > div,
+        div[data-baseweb="input"] > div,
+        div[data-baseweb="calendar"],
+        div[data-baseweb="popover"] div[data-baseweb="calendar"],
+        .stDateInput input {{
+            background-color: #FFFFFF !important;
+            color: {TEXT} !important;
+            border: 1px solid {GRID} !important;
+            border-radius: 6px !important;
+        }}
+        div[data-baseweb="select"] span,
+        div[data-baseweb="tag"] {{
+            color: {TEXT} !important;
+        }}
+        div[data-baseweb="tag"] {{
+            background-color: {PRIMARY} !important;
+        }}
+        div[data-baseweb="tag"] span {{
+            color: #FFFFFF !important;
+        }}
+        ul[data-baseweb="menu"] {{
+            background-color: #FFFFFF !important;
+            color: {TEXT} !important;
+        }}
+        ul[data-baseweb="menu"] li:hover {{
+            background-color: {SIDEBAR_BG} !important;
+        }}
+
         div[data-testid="stMetric"] {{
             background-color: {CARD_BG};
             border: 1px solid {GRID};
             border-left: 6px solid {PRIMARY};
             border-radius: 10px;
             padding: 14px 16px;
-            box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+            box-shadow: 0 1px 4px rgba(0,0,0,0.05);
         }}
         div[data-testid="stMetricLabel"] {{
-            color: {ACCENT};
+            color: {PRIMARY_DARK};
             font-weight: 600;
+        }}
+        div[data-testid="stMetricValue"] {{
+            color: {TEXT};
         }}
         .stDataFrame {{
             border: 1px solid {GRID};
@@ -102,8 +139,18 @@ st.markdown(
         hr {{
             border-top: 1px solid {GRID};
         }}
+        .stButton button, .stDownloadButton button {{
+            background-color: {PRIMARY};
+            color: #FFFFFF;
+            border: none;
+            border-radius: 6px;
+        }}
+        .stButton button:hover, .stDownloadButton button:hover {{
+            background-color: {PRIMARY_DARK};
+            color: #FFFFFF;
+        }}
         .top-banner {{
-            background: linear-gradient(90deg, {PRIMARY} 0%, {ACCENT} 100%);
+            background: linear-gradient(90deg, {PRIMARY_DARK} 0%, {PRIMARY} 55%, {ACCENT} 100%);
             padding: 14px 22px;
             border-radius: 10px;
             color: white;
@@ -124,7 +171,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-HOSPITAL_PALETTE = [PRIMARY, ACCENT, PRIMARY_LIGHT, "#00838F", "#26A69A", "#0288D1", WARN]
+HOSPITAL_PALETTE = [PRIMARY, ACCENT, PRIMARY_DARK, "#4FC3F7", "#26A69A", "#78909C", WARN]
 
 # --------------------------------------------------------------------------
 # HEADER — logo top-left + title banner
