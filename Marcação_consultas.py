@@ -191,14 +191,15 @@ st.markdown(
             background-color: {CARD_BG};
             border: 1px solid {GRID};
             border-radius: 8px;
-            min-height: 130px;
-            padding: 6px;
+            min-height: 220px;
+            padding: 8px;
             display: flex;
             flex-direction: column;
         }}
         .cal-cell.empty {{
             background-color: {SIDEBAR_BG};
             border: 1px dashed {GRID};
+            min-height: 60px;
         }}
         .cal-cell.today {{
             border: 2px solid {ACCENT};
@@ -206,22 +207,25 @@ st.markdown(
         .cal-daynum {{
             font-weight: 700;
             color: {PRIMARY_DARK};
-            font-size: 0.85rem;
-            margin-bottom: 4px;
+            font-size: 1rem;
+            margin-bottom: 6px;
+            flex: 0 0 auto;
         }}
         .cal-events {{
             overflow-y: auto;
-            max-height: 105px;
+            max-height: 260px;
             display: flex;
             flex-direction: column;
-            gap: 3px;
+            gap: 4px;
+            scrollbar-width: thin;
         }}
         .cal-event {{
+            flex: 0 0 auto;
             background-color: {PRIMARY};
             color: #FFFFFF;
-            font-size: 0.72rem;
-            line-height: 1.2;
-            padding: 2px 5px;
+            font-size: 0.82rem;
+            line-height: 1.5;
+            padding: 4px 7px;
             border-radius: 4px;
             white-space: nowrap;
             overflow: hidden;
@@ -232,7 +236,7 @@ st.markdown(
             background-color: {ACCENT};
         }}
         .cal-event:hover {{
-            filter: brightness(1.1);
+            filter: brightness(1.15);
         }}
     </style>
     """,
