@@ -78,6 +78,17 @@ st.markdown(
             background-color: {BG};
             color: {TEXT};
         }}
+
+        /* Hide Streamlit's own top header (menu / GitHub icon) and footer */
+        header {{
+            visibility: hidden;
+            height: 0;
+        }}
+        footer {{
+            visibility: hidden;
+            height: 0;
+        }}
+
         section[data-testid="stSidebar"] {{
             background-color: {SIDEBAR_BG};
             border-right: 1px solid {GRID};
@@ -139,7 +150,7 @@ st.markdown(
             border-radius: 8px;
         }}
         .block-container {{
-            padding-top: 1.2rem;
+            padding-top: 1.5rem;
         }}
         hr {{
             border-top: 1px solid {GRID};
