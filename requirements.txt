@@ -1,0 +1,10 @@
+streamlit
+pandas
+openpyxl
+xlsxwriter
+matplotlib
+altair
+requests
+plotly
+unidecode
+numpy
