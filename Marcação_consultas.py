@@ -18,6 +18,7 @@ If your data lives on a specific tab (not the first one), set GID below
 to that tab's gid (found in the sheet's URL after "gid=").
 """
 
+import io
 import re
 from datetime import datetime
 
@@ -174,6 +175,43 @@ st.markdown(
 HOSPITAL_PALETTE = [PRIMARY, ACCENT, PRIMARY_DARK, "#4FC3F7", "#26A69A", "#78909C", WARN]
 
 # --------------------------------------------------------------------------
+# LOGIN GATE
+# --------------------------------------------------------------------------
+VALID_USER = "0000"
+VALID_PASSWORD = "0000"
+
+if "authenticated" not in st.session_state:
+    st.session_state.authenticated = False
+
+if not st.session_state.authenticated:
+    col_a, col_b, col_c = st.columns([1, 1.2, 1])
+    with col_b:
+        try:
+            st.image(LOGO_PATH, use_container_width=True)
+        except Exception:
+            pass
+        st.markdown(
+            f"""
+            <div style="text-align:center; margin-bottom: 10px;">
+                <h2 style="color:{PRIMARY_DARK}; margin-bottom:0;">Agenda Cirúrgica</h2>
+                <p style="color:{TEXT}; opacity:0.75;">Inicie sessão para aceder ao painel</p>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+        with st.form("login_form"):
+            user_input = st.text_input("Utilizador")
+            pass_input = st.text_input("Palavra-passe", type="password")
+            submitted = st.form_submit_button("Entrar", use_container_width=True)
+            if submitted:
+                if user_input == VALID_USER and pass_input == VALID_PASSWORD:
+                    st.session_state.authenticated = True
+                    st.rerun()
+                else:
+                    st.error("Utilizador ou palavra-passe incorretos.")
+    st.stop()
+
+# --------------------------------------------------------------------------
 # HEADER — logo top-left + title banner
 # --------------------------------------------------------------------------
 col_logo, col_title = st.columns([1, 5], vertical_alignment="center")
@@ -317,6 +355,9 @@ st.sidebar.markdown("---")
 if st.sidebar.button("🔄 Atualizar dados"):
     st.cache_data.clear()
     st.rerun()
+if st.sidebar.button("🚪 Terminar sessão"):
+    st.session_state.authenticated = False
+    st.rerun()
 
 # --------------------------------------------------------------------------
 # KPI METRICS
@@ -381,11 +422,29 @@ st.markdown("---")
 st.markdown("### 📋 Lista de Cirurgias (filtradas)")
 st.dataframe(filtered, use_container_width=True, hide_index=True)
 
-st.download_button(
-    "⬇️ Descarregar dados filtrados (CSV)",
-    data=filtered.to_csv(index=False).encode("utf-8-sig"),
-    file_name=f"agenda_cirurgica_{datetime.now().strftime('%Y%m%d_%H%M')}.csv",
-    mime="text/csv",
-)
+def to_excel_bytes(data: pd.DataFrame) -> bytes:
+    buffer = io.BytesIO()
+    with pd.ExcelWriter(buffer, engine="openpyxl") as writer:
+        data.to_excel(writer, index=False, sheet_name="Agenda Cirurgica")
+    return buffer.getvalue()
+
+
+dl_col1, dl_col2 = st.columns(2)
+with dl_col1:
+    st.download_button(
+        "⬇️ Descarregar CSV",
+        data=filtered.to_csv(index=False).encode("utf-8-sig"),
+        file_name=f"agenda_cirurgica_{datetime.now().strftime('%Y%m%d_%H%M')}.csv",
+        mime="text/csv",
+        use_container_width=True,
+    )
+with dl_col2:
+    st.download_button(
+        "⬇️ Descarregar Excel",
+        data=to_excel_bytes(filtered),
+        file_name=f"agenda_cirurgica_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        use_container_width=True,
+    )
 
 st.caption("Fonte: Google Sheets (ULS Médio Ave) · Atualizado automaticamente a cada 5 minutos.")
