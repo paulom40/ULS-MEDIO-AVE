@@ -576,3 +576,13 @@ with tab_calendar:
             html_parts.append('</div>')
 
             st.markdown("".join(html_parts), unsafe_allow_html=True)
+
+            st.markdown("")
+            month_export = month_events.drop(columns=["_year", "_month"], errors="ignore")
+            st.download_button(
+                f"⬇️ Descarregar Excel — {sel_label}",
+                data=to_excel_bytes(month_export),
+                file_name=f"agenda_cirurgica_{sel_year}_{sel_month:02d}.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                use_container_width=True,
+            )
