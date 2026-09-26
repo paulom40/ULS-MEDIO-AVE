@@ -25,7 +25,6 @@ import re
 from datetime import datetime
 
 import pandas as pd
-import plotly.express as px
 import streamlit as st
 
 # --------------------------------------------------------------------------
@@ -243,8 +242,6 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-HOSPITAL_PALETTE = [PRIMARY, ACCENT, PRIMARY_DARK, "#4FC3F7", "#26A69A", "#78909C", WARN]
-
 # --------------------------------------------------------------------------
 # LOGIN GATE
 # --------------------------------------------------------------------------
@@ -459,50 +456,6 @@ with tab_dashboard:
     k2.metric("Médicos Distintos", filtered[COL_MEDICO].nunique() if COL_MEDICO in filtered.columns else "—")
     k3.metric("Blocos em Uso", filtered[COL_BLOCO].nunique() if COL_BLOCO in filtered.columns else "—")
     k4.metric("Processos", filtered[COL_PROCESSO].nunique() if COL_PROCESSO in filtered.columns else "—")
-
-    st.markdown("---")
-
-    # ---------------- CHARTS ----------------
-    c1, c2 = st.columns(2)
-
-    with c1:
-        if COL_MEDICO in filtered.columns and not filtered.empty:
-            by_med = filtered[COL_MEDICO].value_counts().reset_index()
-            by_med.columns = [COL_MEDICO, "Cirurgias"]
-            fig = px.bar(
-                by_med, x="Cirurgias", y=COL_MEDICO, orientation="h",
-                title="Cirurgias por Médico",
-                color_discrete_sequence=[PRIMARY],
-            )
-            fig.update_layout(
-                plot_bgcolor=CARD_BG, paper_bgcolor=CARD_BG,
-                font_color=TEXT, yaxis=dict(categoryorder="total ascending"),
-            )
-            st.plotly_chart(fig, use_container_width=True)
-
-    with c2:
-        if COL_BLOCO in filtered.columns and not filtered.empty:
-            by_bloco = filtered[COL_BLOCO].value_counts().reset_index()
-            by_bloco.columns = [COL_BLOCO, "Cirurgias"]
-            fig2 = px.pie(
-                by_bloco, names=COL_BLOCO, values="Cirurgias",
-                title="Distribuição por Bloco",
-                color_discrete_sequence=HOSPITAL_PALETTE,
-                hole=0.45,
-            )
-            fig2.update_layout(paper_bgcolor=CARD_BG, font_color=TEXT)
-            st.plotly_chart(fig2, use_container_width=True)
-
-    if COL_DATA in filtered.columns and filtered[COL_DATA].notna().any():
-        by_day = filtered.dropna(subset=[COL_DATA]).groupby(filtered[COL_DATA].dt.date).size().reset_index()
-        by_day.columns = ["Data", "Cirurgias"]
-        fig3 = px.line(
-            by_day, x="Data", y="Cirurgias", markers=True,
-            title="Cirurgias ao Longo do Tempo",
-            color_discrete_sequence=[ACCENT],
-        )
-        fig3.update_layout(plot_bgcolor=CARD_BG, paper_bgcolor=CARD_BG, font_color=TEXT)
-        st.plotly_chart(fig3, use_container_width=True)
 
     st.markdown("---")
 
