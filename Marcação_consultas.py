@@ -32,7 +32,7 @@ SHEET_ID = "1tt7-2kCdeJmUbtYaKVkNnZ0EptzcHj-aNhQWF_CIF40"
 GID = "0"  # change if your data is on another tab
 CSV_URL = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/export?format=csv&gid={GID}"
 
-LOGO_PATH = "assets/hospital_logo.png"
+LOGO_PATH = "https://raw.githubusercontent.com/paulom40/ULS-MEDIO-AVE/main/Logo_5.-ULS-MEDIO-AVE.png"
 
 # Column names expected in the sheet — edit here if your headers differ.
 COL_DATA = "Data"
@@ -205,7 +205,10 @@ elif COL_DATA in df.columns:
 # --------------------------------------------------------------------------
 # SIDEBAR FILTERS
 # --------------------------------------------------------------------------
-st.sidebar.image(LOGO_PATH, use_container_width=True)
+try:
+    st.sidebar.image(LOGO_PATH, use_container_width=True)
+except Exception:
+    pass
 st.sidebar.markdown("## 🔍 Filtros")
 st.sidebar.markdown("---")
 
