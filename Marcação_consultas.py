@@ -131,7 +131,16 @@ st.markdown(
         [data-testid="stSelectbox"] * {{
             background-color: #FFFFFF !important;
             color: {TEXT} !important;
+        }}
+        /* Icons (dropdown chevron, calendar glyph, clear "x") use nested
+           SVG shapes where some parts must stay transparent — forcing fill
+           on every part turns them into solid black squares, so only the
+           outer svg gets a color and inner shapes inherit it naturally. */
+        [data-testid="stDateInput"] svg,
+        [data-testid="stMultiSelect"] svg,
+        [data-testid="stSelectbox"] svg {{
             fill: {TEXT} !important;
+            background-color: transparent !important;
         }}
         [data-testid="stDateInput"] > div,
         [data-testid="stMultiSelect"] > div,
@@ -156,6 +165,29 @@ st.markdown(
         div[data-baseweb="popover"] * {{
             background-color: #FFFFFF !important;
             color: {TEXT} !important;
+        }}
+
+        /* Tabs (Dashboard / Calendário) — the inactive tab's text was
+           invisible (white on white); force both states to be legible */
+        button[data-baseweb="tab"] {{
+            color: {TEXT} !important;
+            background-color: transparent !important;
+        }}
+        button[data-baseweb="tab"] p {{
+            color: {TEXT} !important;
+        }}
+        button[data-baseweb="tab"][aria-selected="true"],
+        button[data-baseweb="tab"][aria-selected="true"] p {{
+            color: {PRIMARY} !important;
+        }}
+        [data-baseweb="tab-highlight"] {{
+            background-color: {PRIMARY} !important;
+        }}
+        [data-baseweb="tab-border"] {{
+            background-color: {GRID} !important;
+        }}
+        [data-baseweb="tab-list"] {{
+            background-color: transparent !important;
         }}
         /* Form submit buttons (e.g. the login "Entrar" button) */
         div[data-testid="stFormSubmitButton"] button {{
