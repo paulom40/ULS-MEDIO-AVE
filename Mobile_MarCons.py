@@ -83,10 +83,18 @@ st.markdown(
             color: {TEXT};
         }}
 
-        /* Hide Streamlit's own top header (menu / GitHub icon) and footer */
-        header {{
-            visibility: hidden;
-            height: 0;
+        /* Hide Streamlit's own header CONTENT (menu / GitHub icon) but not
+           the header element itself — it also hosts the mobile sidebar
+           toggle button, which must stay usable on phones. */
+        header[data-testid="stHeader"] {{
+            background: transparent !important;
+            height: auto !important;
+        }}
+        [data-testid="stToolbar"] {{
+            visibility: hidden !important;
+        }}
+        [data-testid="stMainMenu"] {{
+            visibility: hidden !important;
         }}
         footer {{
             visibility: hidden;
@@ -99,6 +107,13 @@ st.markdown(
         }}
         [data-testid="stStatusWidget"] {{
             visibility: hidden !important;
+        }}
+        /* Keep the mobile sidebar open/close toggle visible and usable */
+        [data-testid="stSidebarCollapsedControl"],
+        [data-testid="stSidebarCollapsedControl"] * {{
+            visibility: visible !important;
+            opacity: 1 !important;
+            color: {TEXT} !important;
         }}
 
         section[data-testid="stSidebar"] {{
