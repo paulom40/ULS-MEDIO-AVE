@@ -121,6 +121,42 @@ st.markdown(
         div[data-baseweb="input"] button {{
             background-color: transparent !important;
         }}
+
+        /* Sidebar multiselect / date-input controls — target Streamlit's
+           official stable widget wrapper classes and force every descendant
+           to white, since the internal component structure isn't a reliable
+           thing to guess at. */
+        [data-testid="stDateInput"] *,
+        [data-testid="stMultiSelect"] *,
+        [data-testid="stSelectbox"] * {{
+            background-color: #FFFFFF !important;
+            color: {TEXT} !important;
+            fill: {TEXT} !important;
+        }}
+        [data-testid="stDateInput"] > div,
+        [data-testid="stMultiSelect"] > div,
+        [data-testid="stSelectbox"] > div {{
+            border: 1px solid {GRID} !important;
+            border-radius: 6px !important;
+        }}
+        /* Restore the colored "chip" look for selected multiselect values
+           (must come after the wildcard rule above, and be at least as
+           specific, so it wins) */
+        [data-testid="stMultiSelect"] span[data-baseweb="tag"],
+        [data-testid="stMultiSelect"] div[data-baseweb="tag"] {{
+            background-color: {PRIMARY} !important;
+        }}
+        [data-testid="stMultiSelect"] span[data-baseweb="tag"] *,
+        [data-testid="stMultiSelect"] div[data-baseweb="tag"] * {{
+            color: #FFFFFF !important;
+            fill: #FFFFFF !important;
+        }}
+        /* The dropdown menu that opens on click (portalled, may render
+           outside the sidebar in the DOM, so it's targeted separately) */
+        div[data-baseweb="popover"] * {{
+            background-color: #FFFFFF !important;
+            color: {TEXT} !important;
+        }}
         /* Form submit buttons (e.g. the login "Entrar" button) */
         div[data-testid="stFormSubmitButton"] button {{
             background-color: {PRIMARY} !important;
@@ -499,8 +535,14 @@ with tab_dashboard:
     st.markdown("---")
 
     # ---------------- DATA TABLE ----------------
+    # st.dataframe renders on an HTML canvas, so plain CSS can't recolor its
+    # cells — we style the data itself via a pandas Styler instead.
     st.markdown("### 📋 Lista de Cirurgias (filtradas)")
-    st.dataframe(filtered, use_container_width=True, hide_index=True)
+    table_style = filtered.style.set_properties(**{
+        "background-color": "#FFFFFF",
+        "color": TEXT,
+    })
+    st.dataframe(table_style, use_container_width=True, hide_index=True)
 
     dl_col1, dl_col2 = st.columns(2)
     with dl_col1:
