@@ -168,16 +168,17 @@ st.markdown(
         }}
 
         /* Tabs (Dashboard / Calendário) — the inactive tab's text was
-           invisible (white on white); force both states to be legible */
-        button[data-baseweb="tab"] {{
+           invisible (white on white); force both states to be legible.
+           No tag-name restriction, since the element isn't necessarily
+           a <button> — attribute selector alone is safer. */
+        [data-baseweb="tab"],
+        [data-baseweb="tab"] * {{
             color: {TEXT} !important;
             background-color: transparent !important;
+            opacity: 1 !important;
         }}
-        button[data-baseweb="tab"] p {{
-            color: {TEXT} !important;
-        }}
-        button[data-baseweb="tab"][aria-selected="true"],
-        button[data-baseweb="tab"][aria-selected="true"] p {{
+        [data-baseweb="tab"][aria-selected="true"],
+        [data-baseweb="tab"][aria-selected="true"] * {{
             color: {PRIMARY} !important;
         }}
         [data-baseweb="tab-highlight"] {{
