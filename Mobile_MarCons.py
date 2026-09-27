@@ -25,7 +25,6 @@ follow the visitor's OS dark-mode setting instead of this app's palette.
 import calendar as pycal
 import html as html_lib
 import io
-import re
 from datetime import datetime
 
 import pandas as pd
@@ -600,7 +599,7 @@ elif COL_DATA in df.columns:
     )
 
 # --------------------------------------------------------------------------
-# SIDEBAR FILTERS
+# SIDEBAR + MOBILE FILTERS (shared logic)
 # --------------------------------------------------------------------------
 try:
     st.sidebar.image(LOGO_PATH, use_container_width=True)
@@ -610,9 +609,39 @@ except Exception:
 st.sidebar.markdown("## 🔍 Filtros")
 st.sidebar.markdown("---")
 
-filtered = df.copy()
+def apply_filters(
+    base_df: pd.DataFrame,
+    date_range=None,
+    months=None,
+    processos=None,
+    medicos=None,
+    blocos=None,
+) -> pd.DataFrame:
+    out = base_df.copy()
 
-# Data (date range) filter
+    if date_range is not None and isinstance(date_range, tuple) and len(date_range) == 2:
+        start, end = date_range
+        if COL_DATA in out.columns:
+            out = out[
+                (out[COL_DATA].dt.date >= start) & (out[COL_DATA].dt.date <= end)
+            ]
+
+    if months:
+        out = out[out[COL_MES].isin(months)]
+
+    if processos:
+        out = out[out[COL_PROCESSO].astype(str).isin(processos)]
+
+    if medicos:
+        out = out[out[COL_MEDICO].astype(str).isin(medicos)]
+
+    if blocos:
+        out = out[out[COL_BLOCO].astype(str).isin(blocos)]
+
+    return out
+
+# ---------- SIDEBAR widgets ----------
+date_range = None
 if COL_DATA in df.columns and df[COL_DATA].notna().any():
     min_date = df[COL_DATA].min().date()
     max_date = df[COL_DATA].max().date()
@@ -623,46 +652,42 @@ if COL_DATA in df.columns and df[COL_DATA].notna().any():
         min_value=min_date,
         max_value=max_date,
         label_visibility="collapsed",
+        key="sidebar_date",
     )
-    if isinstance(date_range, tuple) and len(date_range) == 2:
-        start, end = date_range
-        filtered = filtered[
-            (filtered[COL_DATA].dt.date >= start) & (filtered[COL_DATA].dt.date <= end)
-        ]
 
-# Mês filter
+sel_mes = []
 if COL_MES in df.columns:
     st.sidebar.markdown("**🗓️ Mês**")
     meses_disponiveis = [m for m in MESES_PT if m in df[COL_MES].dropna().unique()]
     outros = sorted(set(df[COL_MES].dropna().unique()) - set(meses_disponiveis))
     opcoes_mes = meses_disponiveis + outros
-    sel_mes = st.sidebar.multiselect("Selecionar mês(es)", opcoes_mes, default=[], label_visibility="collapsed")
-    if sel_mes:
-        filtered = filtered[filtered[COL_MES].isin(sel_mes)]
+    sel_mes = st.sidebar.multiselect(
+        "Selecionar mês(es)", opcoes_mes, default=[], label_visibility="collapsed", key="sidebar_mes"
+    )
 
-# Processo filter
+sel_proc = []
 if COL_PROCESSO in df.columns:
     st.sidebar.markdown("**🧾 Processo**")
     proc_opts = sorted(df[COL_PROCESSO].dropna().astype(str).unique())
-    sel_proc = st.sidebar.multiselect("Selecionar processo(s)", proc_opts, default=[], label_visibility="collapsed")
-    if sel_proc:
-        filtered = filtered[filtered[COL_PROCESSO].astype(str).isin(sel_proc)]
+    sel_proc = st.sidebar.multiselect(
+        "Selecionar processo(s)", proc_opts, default=[], label_visibility="collapsed", key="sidebar_proc"
+    )
 
-# Médico filter
+sel_med = []
 if COL_MEDICO in df.columns:
     st.sidebar.markdown("**👨‍⚕️ Médico**")
     med_opts = sorted(df[COL_MEDICO].dropna().astype(str).unique())
-    sel_med = st.sidebar.multiselect("Selecionar médico(s)", med_opts, default=[], label_visibility="collapsed")
-    if sel_med:
-        filtered = filtered[filtered[COL_MEDICO].astype(str).isin(sel_med)]
+    sel_med = st.sidebar.multiselect(
+        "Selecionar médico(s)", med_opts, default=[], label_visibility="collapsed", key="sidebar_med"
+    )
 
-# Bloco filter
+sel_bloco = []
 if COL_BLOCO in df.columns:
     st.sidebar.markdown("**🚪 Bloco**")
     bloco_opts = sorted(df[COL_BLOCO].dropna().astype(str).unique())
-    sel_bloco = st.sidebar.multiselect("Selecionar bloco(s)", bloco_opts, default=[], label_visibility="collapsed")
-    if sel_bloco:
-        filtered = filtered[filtered[COL_BLOCO].astype(str).isin(sel_bloco)]
+    sel_bloco = st.sidebar.multiselect(
+        "Selecionar bloco(s)", bloco_opts, default=[], label_visibility="collapsed", key="sidebar_bloco"
+    )
 
 st.sidebar.markdown("---")
 if st.sidebar.button("🔄 Atualizar dados"):
@@ -672,6 +697,80 @@ if st.sidebar.button("🔄 Atualizar dados"):
 if st.sidebar.button("🚪 Terminar sessão"):
     st.session_state.authenticated = False
     st.rerun()
+
+# ---------- MOBILE FILTERS (expander) ----------
+with st.expander("🔍 Filtros (telemóvel / ecrã estreito)", expanded=False):
+    st.caption("Use estes filtros quando o menu lateral não estiver visível no telemóvel.")
+
+    date_range_m = None
+    if COL_DATA in df.columns and df[COL_DATA].notna().any():
+        min_date = df[COL_DATA].min().date()
+        max_date = df[COL_DATA].max().date()
+        date_range_m = st.date_input(
+            "📅 Intervalo de datas",
+            value=(min_date, max_date),
+            min_value=min_date,
+            max_value=max_date,
+            key="mobile_date",
+        )
+
+    sel_mes_m = []
+    if COL_MES in df.columns:
+        meses_disponiveis = [m for m in MESES_PT if m in df[COL_MES].dropna().unique()]
+        outros = sorted(set(df[COL_MES].dropna().unique()) - set(meses_disponiveis))
+        opcoes_mes = meses_disponiveis + outros
+        sel_mes_m = st.multiselect("🗓️ Mês", opcoes_mes, key="mobile_mes")
+
+    sel_proc_m = []
+    if COL_PROCESSO in df.columns:
+        proc_opts = sorted(df[COL_PROCESSO].dropna().astype(str).unique())
+        sel_proc_m = st.multiselect("🧾 Processo", proc_opts, key="mobile_proc")
+
+    sel_med_m = []
+    if COL_MEDICO in df.columns:
+        med_opts = sorted(df[COL_MEDICO].dropna().astype(str).unique())
+        sel_med_m = st.multiselect("👨‍⚕️ Médico", med_opts, key="mobile_med")
+
+    sel_bloco_m = []
+    if COL_BLOCO in df.columns:
+        bloco_opts = sorted(df[COL_BLOCO].dropna().astype(str).unique())
+        sel_bloco_m = st.multiselect("🚪 Bloco", bloco_opts, key="mobile_bloco")
+
+# Decide which set of filters to use:
+# - If any mobile filter has a non-default value → use mobile filters
+# - Otherwise use sidebar filters
+use_mobile = False
+if COL_DATA in df.columns and df[COL_DATA].notna().any():
+    full_range = (df[COL_DATA].min().date(), df[COL_DATA].max().date())
+    if (
+        date_range_m is not None
+        and isinstance(date_range_m, tuple)
+        and len(date_range_m) == 2
+        and date_range_m != full_range
+    ):
+        use_mobile = True
+
+if any([sel_mes_m, sel_proc_m, sel_med_m, sel_bloco_m]):
+    use_mobile = True
+
+if use_mobile:
+    filtered = apply_filters(
+        df,
+        date_range=date_range_m,
+        months=sel_mes_m,
+        processos=sel_proc_m,
+        medicos=sel_med_m,
+        blocos=sel_bloco_m,
+    )
+else:
+    filtered = apply_filters(
+        df,
+        date_range=date_range,
+        months=sel_mes,
+        processos=sel_proc,
+        medicos=sel_med,
+        blocos=sel_bloco,
+    )
 
 def to_excel_bytes(data: pd.DataFrame) -> bytes:
     buffer = io.BytesIO()
@@ -687,61 +786,6 @@ def safe(row, col):
     if pd.isna(val) or str(val).strip() == "":
         return "—"
     return str(val).strip()
-
-# --------------------------------------------------------------------------
-# MOBILE FILTERS (always visible expander – especially useful on phones)
-# --------------------------------------------------------------------------
-with st.expander("🔍 Filtros (telemóvel / ecrã estreito)", expanded=False):
-    st.caption("Use estes filtros quando o menu lateral não estiver visível no telemóvel.")
-
-    mobile_filtered = df.copy()
-
-    if COL_DATA in df.columns and df[COL_DATA].notna().any():
-        min_date = df[COL_DATA].min().date()
-        max_date = df[COL_DATA].max().date()
-        date_range_m = st.date_input(
-            "📅 Intervalo de datas",
-            value=(min_date, max_date),
-            min_value=min_date,
-            max_value=max_date,
-            key="mobile_date",
-        )
-        if isinstance(date_range_m, tuple) and len(date_range_m) == 2:
-            start, end = date_range_m
-            mobile_filtered = mobile_filtered[
-                (mobile_filtered[COL_DATA].dt.date >= start)
-                & (mobile_filtered[COL_DATA].dt.date <= end)
-            ]
-
-    if COL_MES in df.columns:
-        meses_disponiveis = [m for m in MESES_PT if m in df[COL_MES].dropna().unique()]
-        outros = sorted(set(df[COL_MES].dropna().unique()) - set(meses_disponiveis))
-        opcoes_mes = meses_disponiveis + outros
-        sel_mes_m = st.multiselect("🗓️ Mês", opcoes_mes, key="mobile_mes")
-        if sel_mes_m:
-            mobile_filtered = mobile_filtered[mobile_filtered[COL_MES].isin(sel_mes_m)]
-
-    if COL_PROCESSO in df.columns:
-        proc_opts = sorted(df[COL_PROCESSO].dropna().astype(str).unique())
-        sel_proc_m = st.multiselect("🧾 Processo", proc_opts, key="mobile_proc")
-        if sel_proc_m:
-            mobile_filtered = mobile_filtered[mobile_filtered[COL_PROCESSO].astype(str).isin(sel_proc_m)]
-
-    if COL_MEDICO in df.columns:
-        med_opts = sorted(df[COL_MEDICO].dropna().astype(str).unique())
-        sel_med_m = st.multiselect("👨‍⚕️ Médico", med_opts, key="mobile_med")
-        if sel_med_m:
-            mobile_filtered = mobile_filtered[mobile_filtered[COL_MEDICO].astype(str).isin(sel_med_m)]
-
-    if COL_BLOCO in df.columns:
-        bloco_opts = sorted(df[COL_BLOCO].dropna().astype(str).unique())
-        sel_bloco_m = st.multiselect("🚪 Bloco", bloco_opts, key="mobile_bloco")
-        if sel_bloco_m:
-            mobile_filtered = mobile_filtered[mobile_filtered[COL_BLOCO].astype(str).isin(sel_bloco_m)]
-
-    if st.button("✅ Aplicar filtros do telemóvel", use_container_width=True, key="apply_mobile"):
-        filtered = mobile_filtered
-        st.rerun()
 
 st.markdown("")
 
