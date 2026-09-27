@@ -100,6 +100,7 @@ st.markdown(
             visibility: hidden;
             height: 0;
         }}
+
         /* Hide any GitHub / Streamlit badge links injected by the hosting platform */
         a[href*="github.com"],
         a[href*="streamlit.io"] {{
@@ -108,12 +109,31 @@ st.markdown(
         [data-testid="stStatusWidget"] {{
             visibility: hidden !important;
         }}
-        /* Keep the mobile sidebar open/close toggle visible and usable */
+
+        /* ===== MOBILE SIDEBAR TOGGLE – highly visible blue circle ===== */
         [data-testid="stSidebarCollapsedControl"],
         [data-testid="stSidebarCollapsedControl"] * {{
             visibility: visible !important;
             opacity: 1 !important;
-            color: {TEXT} !important;
+        }}
+        [data-testid="stSidebarCollapsedControl"] {{
+            position: fixed !important;
+            top: 12px !important;
+            left: 12px !important;
+            z-index: 999999 !important;
+            background-color: {PRIMARY} !important;
+            border-radius: 50% !important;
+            width: 44px !important;
+            height: 44px !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.25) !important;
+        }}
+        [data-testid="stSidebarCollapsedControl"] svg {{
+            fill: #FFFFFF !important;
+            width: 22px !important;
+            height: 22px !important;
         }}
 
         section[data-testid="stSidebar"] {{
@@ -123,6 +143,7 @@ st.markdown(
         section[data-testid="stSidebar"] * {{
             color: {TEXT};
         }}
+
         h1, h2, h3 {{
             color: {PRIMARY_DARK};
             font-family: 'Segoe UI', sans-serif;
@@ -161,10 +182,12 @@ st.markdown(
         ul[data-baseweb="menu"] li:hover {{
             background-color: {SIDEBAR_BG} !important;
         }}
+
         /* Password show/hide eye icon button */
         div[data-baseweb="input"] button {{
             background-color: transparent !important;
         }}
+
         /* Form submit buttons (e.g. the login "Entrar" button) */
         div[data-testid="stFormSubmitButton"] button {{
             background-color: {PRIMARY} !important;
@@ -177,20 +200,13 @@ st.markdown(
             color: #FFFFFF !important;
         }}
 
-        /* Sidebar multiselect / date-input controls — target Streamlit's
-           official stable widget wrapper classes and force every descendant
-           to white, since the internal component structure isn't a reliable
-           thing to guess at. */
+        /* Sidebar multiselect / date-input controls */
         [data-testid="stDateInput"] *,
         [data-testid="stMultiSelect"] *,
         [data-testid="stSelectbox"] * {{
             background-color: #FFFFFF !important;
             color: {TEXT} !important;
         }}
-        /* Icons (dropdown chevron, calendar glyph, clear "x") use nested
-           SVG shapes where some parts must stay transparent — forcing fill
-           on every part turns them into solid black squares, so only the
-           outer svg gets a color and inner shapes inherit it naturally. */
         [data-testid="stDateInput"] svg,
         [data-testid="stMultiSelect"] svg,
         [data-testid="stSelectbox"] svg {{
@@ -203,9 +219,8 @@ st.markdown(
             border: 1px solid {GRID} !important;
             border-radius: 6px !important;
         }}
-        /* Restore the colored "chip" look for selected multiselect values
-           (must come after the wildcard rule above, and be at least as
-           specific, so it wins) */
+
+        /* Restore the colored "chip" look for selected multiselect values */
         [data-testid="stMultiSelect"] span[data-baseweb="tag"],
         [data-testid="stMultiSelect"] div[data-baseweb="tag"] {{
             background-color: {PRIMARY} !important;
@@ -215,8 +230,8 @@ st.markdown(
             color: #FFFFFF !important;
             fill: #FFFFFF !important;
         }}
-        /* The dropdown menu that opens on click (portalled, may render
-           outside the sidebar in the DOM, so it's targeted separately) */
+
+        /* The dropdown menu that opens on click */
         div[data-baseweb="popover"] * {{
             background-color: #FFFFFF !important;
             color: {TEXT} !important;
@@ -230,9 +245,6 @@ st.markdown(
             padding: 14px 16px;
             box-shadow: 0 1px 4px rgba(0,0,0,0.05);
         }}
-        /* Metric label/value — !important + opacity:1 because Streamlit's
-           own default styling for these is a low-opacity gray that a plain
-           color override does not fully replace */
         [data-testid="stMetricLabel"],
         [data-testid="stMetricLabel"] * {{
             color: {PRIMARY_DARK} !important;
@@ -244,16 +256,20 @@ st.markdown(
             color: {TEXT} !important;
             opacity: 1 !important;
         }}
+
         .stDataFrame {{
             border: 1px solid {GRID};
             border-radius: 8px;
         }}
+
         .block-container {{
             padding-top: 1.5rem;
         }}
+
         hr {{
             border-top: 1px solid {GRID};
         }}
+
         .stButton button, .stDownloadButton button {{
             background-color: {PRIMARY};
             color: #FFFFFF;
@@ -264,6 +280,7 @@ st.markdown(
             background-color: {PRIMARY_DARK};
             color: #FFFFFF;
         }}
+
         .top-banner {{
             background: linear-gradient(90deg, {PRIMARY_DARK} 0%, {PRIMARY} 55%, {ACCENT} 100%);
             padding: 14px 22px;
@@ -282,9 +299,7 @@ st.markdown(
             font-size: 0.9rem;
         }}
 
-        /* Dashboard / Calendário switcher (st.radio, styled as segmented
-           buttons — used instead of st.tabs since the tabs widget's
-           internal text color could not be reached/overridden reliably) */
+        /* Dashboard / Calendário switcher */
         [data-testid="stRadio"] {{
             background-color: transparent !important;
         }}
@@ -386,7 +401,7 @@ st.markdown(
             filter: brightness(1.15);
         }}
 
-        /* --- Mobile agenda view (shown instead of the grid on small screens) --- */
+        /* --- Mobile agenda view --- */
         .cal-mobile {{
             display: none;
         }}
@@ -456,6 +471,16 @@ st.markdown(
             }}
             .cal-mobile {{
                 display: block !important;
+            }}
+            [data-testid="stSidebarCollapsedControl"] {{
+                top: 10px !important;
+                left: 10px !important;
+            }}
+            /* Make the mobile filters expander stand out */
+            [data-testid="stExpander"] {{
+                border: 2px solid {PRIMARY} !important;
+                border-radius: 10px !important;
+                margin-bottom: 12px !important;
             }}
         }}
     </style>
@@ -529,7 +554,6 @@ def load_data(url: str) -> pd.DataFrame:
     df.columns = [str(c).strip() for c in df.columns]
     return df
 
-
 def normalize_month_pt(series: pd.Series) -> pd.Series:
     """Map month numbers/names to standard Portuguese month names."""
     def to_month_name(val):
@@ -546,7 +570,6 @@ def normalize_month_pt(series: pd.Series) -> pd.Series:
                 return m
         return s
     return series.apply(to_month_name)
-
 
 try:
     raw_df = load_data(CSV_URL)
@@ -583,6 +606,7 @@ try:
     st.sidebar.image(LOGO_PATH, use_container_width=True)
 except Exception:
     pass
+
 st.sidebar.markdown("## 🔍 Filtros")
 st.sidebar.markdown("---")
 
@@ -644,17 +668,16 @@ st.sidebar.markdown("---")
 if st.sidebar.button("🔄 Atualizar dados"):
     st.cache_data.clear()
     st.rerun()
+
 if st.sidebar.button("🚪 Terminar sessão"):
     st.session_state.authenticated = False
     st.rerun()
-
 
 def to_excel_bytes(data: pd.DataFrame) -> bytes:
     buffer = io.BytesIO()
     with pd.ExcelWriter(buffer, engine="openpyxl") as writer:
         data.to_excel(writer, index=False, sheet_name="Agenda Cirurgica")
     return buffer.getvalue()
-
 
 def safe(row, col):
     """Return a clean string for a field, or '—' if missing/empty."""
@@ -665,14 +688,70 @@ def safe(row, col):
         return "—"
     return str(val).strip()
 
+# --------------------------------------------------------------------------
+# MOBILE FILTERS (always visible expander – especially useful on phones)
+# --------------------------------------------------------------------------
+with st.expander("🔍 Filtros (telemóvel / ecrã estreito)", expanded=False):
+    st.caption("Use estes filtros quando o menu lateral não estiver visível no telemóvel.")
+
+    mobile_filtered = df.copy()
+
+    if COL_DATA in df.columns and df[COL_DATA].notna().any():
+        min_date = df[COL_DATA].min().date()
+        max_date = df[COL_DATA].max().date()
+        date_range_m = st.date_input(
+            "📅 Intervalo de datas",
+            value=(min_date, max_date),
+            min_value=min_date,
+            max_value=max_date,
+            key="mobile_date",
+        )
+        if isinstance(date_range_m, tuple) and len(date_range_m) == 2:
+            start, end = date_range_m
+            mobile_filtered = mobile_filtered[
+                (mobile_filtered[COL_DATA].dt.date >= start)
+                & (mobile_filtered[COL_DATA].dt.date <= end)
+            ]
+
+    if COL_MES in df.columns:
+        meses_disponiveis = [m for m in MESES_PT if m in df[COL_MES].dropna().unique()]
+        outros = sorted(set(df[COL_MES].dropna().unique()) - set(meses_disponiveis))
+        opcoes_mes = meses_disponiveis + outros
+        sel_mes_m = st.multiselect("🗓️ Mês", opcoes_mes, key="mobile_mes")
+        if sel_mes_m:
+            mobile_filtered = mobile_filtered[mobile_filtered[COL_MES].isin(sel_mes_m)]
+
+    if COL_PROCESSO in df.columns:
+        proc_opts = sorted(df[COL_PROCESSO].dropna().astype(str).unique())
+        sel_proc_m = st.multiselect("🧾 Processo", proc_opts, key="mobile_proc")
+        if sel_proc_m:
+            mobile_filtered = mobile_filtered[mobile_filtered[COL_PROCESSO].astype(str).isin(sel_proc_m)]
+
+    if COL_MEDICO in df.columns:
+        med_opts = sorted(df[COL_MEDICO].dropna().astype(str).unique())
+        sel_med_m = st.multiselect("👨‍⚕️ Médico", med_opts, key="mobile_med")
+        if sel_med_m:
+            mobile_filtered = mobile_filtered[mobile_filtered[COL_MEDICO].astype(str).isin(sel_med_m)]
+
+    if COL_BLOCO in df.columns:
+        bloco_opts = sorted(df[COL_BLOCO].dropna().astype(str).unique())
+        sel_bloco_m = st.multiselect("🚪 Bloco", bloco_opts, key="mobile_bloco")
+        if sel_bloco_m:
+            mobile_filtered = mobile_filtered[mobile_filtered[COL_BLOCO].astype(str).isin(sel_bloco_m)]
+
+    if st.button("✅ Aplicar filtros do telemóvel", use_container_width=True, key="apply_mobile"):
+        filtered = mobile_filtered
+        st.rerun()
 
 st.markdown("")
+
 view = st.radio(
     "Navegação",
     ["📊 Dashboard", "📅 Calendário"],
     horizontal=True,
     label_visibility="collapsed",
 )
+
 st.markdown("---")
 
 # ==========================================================================
@@ -689,9 +768,8 @@ if view == "📊 Dashboard":
     st.markdown("---")
 
     # ---------------- DATA TABLE ----------------
-    # st.dataframe renders on an HTML canvas, so plain CSS can't recolor its
-    # cells — we style the data itself via a pandas Styler instead.
     st.markdown("### 📋 Lista de Cirurgias (filtradas)")
+
     table_style = filtered.style.set_properties(**{
         "background-color": "#FFFFFF",
         "color": TEXT,
@@ -740,7 +818,6 @@ if view == "📅 Calendário":
             st.info("Sem datas disponíveis para mostrar no calendário com os filtros atuais.")
         else:
             option_labels = [f"{MESES_PT[m - 1]} {y}" for y, m in year_months]
-
             today = datetime.now()
             default_idx = 0
             for i, (y, m) in enumerate(year_months):
@@ -806,48 +883,4 @@ if view == "📅 Calendário":
                     html_parts.append(
                         f'<div class="{cell_classes}">'
                         f'<div class="cal-daynum">{day}</div>'
-                        f'<div class="cal-events">{events_html}</div>'
-                        f'</div>'
-                    )
-            html_parts.append('</div></div>')
-
-            # ---- MOBILE: vertical agenda list (one card per surgery, no hover needed) ----
-            html_parts.append('<div class="cal-mobile">')
-            days_with_events = sorted(events_by_day.keys())
-            if not days_with_events:
-                html_parts.append('<p>Sem cirurgias agendadas este mês.</p>')
-            for day in days_with_events:
-                is_today = is_current_month and day == today.day
-                day_label = html_lib.escape(f"{day:02d} {MESES_PT[sel_month - 1]}" + (" · Hoje" if is_today else ""))
-                html_parts.append(f'<div class="agenda-day"><div class="agenda-day-header">{day_label}</div>')
-                for row in events_by_day[day]:
-                    hora = html_lib.escape(safe(row, COL_HORA))
-                    processo = html_lib.escape(safe(row, COL_PROCESSO))
-                    especialidade = html_lib.escape(safe(row, COL_ESPECIALIDADE))
-                    intervencao = html_lib.escape(safe(row, COL_INTERVENCAO))
-                    medico = html_lib.escape(safe(row, COL_MEDICO))
-                    bloco = html_lib.escape(safe(row, COL_BLOCO))
-                    html_parts.append(
-                        '<div class="agenda-card">'
-                        f'<span class="agenda-hora">🕐 {hora}</span>'
-                        f'<div class="agenda-field"><b>Processo:</b> {processo}</div>'
-                        f'<div class="agenda-field"><b>Especialidade:</b> {especialidade}</div>'
-                        f'<div class="agenda-field"><b>Intervenção:</b> {intervencao}</div>'
-                        f'<div class="agenda-field"><b>Médico:</b> {medico}</div>'
-                        f'<div class="agenda-field"><b>Bloco:</b> {bloco}</div>'
-                        '</div>'
-                    )
-                html_parts.append('</div>')
-            html_parts.append('</div>')
-
-            st.markdown("".join(html_parts), unsafe_allow_html=True)
-
-            st.markdown("")
-            month_export = month_events.drop(columns=["_year", "_month"], errors="ignore")
-            st.download_button(
-                f"⬇️ Descarregar Excel — {sel_label}",
-                data=to_excel_bytes(month_export),
-                file_name=f"agenda_cirurgica_{sel_year}_{sel_month:02d}.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                use_container_width=True,
-            )
+                        f'<div 
