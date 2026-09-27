@@ -234,14 +234,14 @@ st.markdown(
             padding: 14px 16px;
             box-shadow: 0 1px 4px rgba(0,0,0,0.05);
         }}
-        div[data-testid="stMetricLabel"],
-        div[data-testid="stMetricLabel"] p {{
+        [data-testid="stMetricLabel"],
+        [data-testid="stMetricLabel"] * {{
             color: {PRIMARY_DARK} !important;
             opacity: 1 !important;
             font-weight: 600 !important;
         }}
-        div[data-testid="stMetricValue"],
-        div[data-testid="stMetricValue"] div {{
+        [data-testid="stMetricValue"],
+        [data-testid="stMetricValue"] * {{
             color: {TEXT} !important;
             opacity: 1 !important;
         }}
