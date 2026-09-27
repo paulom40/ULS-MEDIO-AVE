@@ -104,13 +104,41 @@ st.markdown(
         /* --- Fix dark/black input widgets so they match the light theme --- */
         div[data-baseweb="select"] > div,
         div[data-baseweb="input"] > div,
+        div[data-baseweb="base-input"],
         div[data-baseweb="calendar"],
         div[data-baseweb="popover"] div[data-baseweb="calendar"],
-        .stDateInput input {{
+        .stDateInput input,
+        .stTextInput input,
+        input[type="text"],
+        input[type="password"],
+        textarea {{
             background-color: #FFFFFF !important;
             color: {TEXT} !important;
             border: 1px solid {GRID} !important;
             border-radius: 6px !important;
+        }}
+        /* Password show/hide eye icon button */
+        div[data-baseweb="input"] button {{
+            background-color: transparent !important;
+        }}
+        /* Form submit buttons (e.g. the login "Entrar" button) */
+        div[data-testid="stFormSubmitButton"] button {{
+            background-color: {PRIMARY} !important;
+            color: #FFFFFF !important;
+            border: none !important;
+            border-radius: 6px !important;
+        }}
+        div[data-testid="stFormSubmitButton"] button:hover {{
+            background-color: {PRIMARY_DARK} !important;
+            color: #FFFFFF !important;
+        }}
+        /* Hide any GitHub / Streamlit badge links injected by the hosting platform */
+        a[href*="github.com"],
+        a[href*="streamlit.io"] {{
+            display: none !important;
+        }}
+        [data-testid="stStatusWidget"] {{
+            visibility: hidden !important;
         }}
         div[data-baseweb="select"] span,
         div[data-baseweb="tag"] {{
