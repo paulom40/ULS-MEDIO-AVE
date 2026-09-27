@@ -883,4 +883,49 @@ if view == "📅 Calendário":
                     html_parts.append(
                         f'<div class="{cell_classes}">'
                         f'<div class="cal-daynum">{day}</div>'
-                        f'<div 
+                        f'<div class="cal-events">{events_html}</div>'
+                        f'</div>'
+                    )
+
+            html_parts.append('</div></div>')
+
+            # ---- MOBILE: vertical agenda list ----
+            html_parts.append('<div class="cal-mobile">')
+            days_with_events = sorted(events_by_day.keys())
+            if not days_with_events:
+                html_parts.append('<p>Sem cirurgias agendadas este mês.</p>')
+            for day in days_with_events:
+                is_today = is_current_month and day == today.day
+                day_label = html_lib.escape(f"{day:02d} {MESES_PT[sel_month - 1]}" + (" · Hoje" if is_today else ""))
+                html_parts.append(f'<div class="agenda-day"><div class="agenda-day-header">{day_label}</div>')
+                for row in events_by_day[day]:
+                    hora = html_lib.escape(safe(row, COL_HORA))
+                    processo = html_lib.escape(safe(row, COL_PROCESSO))
+                    especialidade = html_lib.escape(safe(row, COL_ESPECIALIDADE))
+                    intervencao = html_lib.escape(safe(row, COL_INTERVENCAO))
+                    medico = html_lib.escape(safe(row, COL_MEDICO))
+                    bloco = html_lib.escape(safe(row, COL_BLOCO))
+                    html_parts.append(
+                        '<div class="agenda-card">'
+                        f'<span class="agenda-hora">🕐 {hora}</span>'
+                        f'<div class="agenda-field"><b>Processo:</b> {processo}</div>'
+                        f'<div class="agenda-field"><b>Especialidade:</b> {especialidade}</div>'
+                        f'<div class="agenda-field"><b>Intervenção:</b> {intervencao}</div>'
+                        f'<div class="agenda-field"><b>Médico:</b> {medico}</div>'
+                        f'<div class="agenda-field"><b>Bloco:</b> {bloco}</div>'
+                        '</div>'
+                    )
+                html_parts.append('</div>')
+            html_parts.append('</div>')
+
+            st.markdown("".join(html_parts), unsafe_allow_html=True)
+
+            st.markdown("")
+            month_export = month_events.drop(columns=["_year", "_month"], errors="ignore")
+            st.download_button(
+                f"⬇️ Descarregar Excel — {sel_label}",
+                data=to_excel_bytes(month_export),
+                file_name=f"agenda_cirurgica_{sel_year}_{sel_month:02d}.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                use_container_width=True,
+            )
