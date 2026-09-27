@@ -167,28 +167,42 @@ st.markdown(
             color: {TEXT} !important;
         }}
 
-        /* Tabs (Dashboard / Calendário) — the inactive tab's text was
-           invisible (white on white); force both states to be legible.
-           No tag-name restriction, since the element isn't necessarily
-           a <button> — attribute selector alone is safer. */
-        [data-baseweb="tab"],
-        [data-baseweb="tab"] * {{
-            color: {TEXT} !important;
+        /* Dashboard / Calendário switcher (st.radio, styled as segmented
+           buttons — using this instead of st.tabs since the tabs widget's
+           internal text color could not be reached/overridden reliably) */
+        [data-testid="stRadio"] {{
             background-color: transparent !important;
+        }}
+        [data-testid="stRadio"] > div {{
+            display: flex;
+            flex-direction: row;
+            gap: 10px;
+        }}
+        [data-testid="stRadio"] label {{
+            background-color: {SIDEBAR_BG} !important;
+            color: {TEXT} !important;
+            opacity: 1 !important;
+            padding: 8px 18px !important;
+            border-radius: 8px !important;
+            border: 1px solid {GRID} !important;
+            font-weight: 600 !important;
+            cursor: pointer;
+        }}
+        [data-testid="stRadio"] label * {{
+            color: {TEXT} !important;
             opacity: 1 !important;
         }}
-        [data-baseweb="tab"][aria-selected="true"],
-        [data-baseweb="tab"][aria-selected="true"] * {{
-            color: {PRIMARY} !important;
-        }}
-        [data-baseweb="tab-highlight"] {{
+        [data-testid="stRadio"] label[data-checked="true"],
+        [data-testid="stRadio"] label:has(input:checked) {{
             background-color: {PRIMARY} !important;
+            border-color: {PRIMARY} !important;
         }}
-        [data-baseweb="tab-border"] {{
-            background-color: {GRID} !important;
+        [data-testid="stRadio"] label[data-checked="true"] *,
+        [data-testid="stRadio"] label:has(input:checked) * {{
+            color: #FFFFFF !important;
         }}
-        [data-baseweb="tab-list"] {{
-            background-color: transparent !important;
+        [data-testid="stRadio"] input {{
+            display: none !important;
         }}
         /* Form submit buttons (e.g. the login "Entrar" button) */
         div[data-testid="stFormSubmitButton"] button {{
@@ -556,12 +570,19 @@ def safe(row, col):
     return str(val).strip()
 
 
-tab_dashboard, tab_calendar = st.tabs(["📊 Dashboard", "📅 Calendário"])
+st.markdown("")
+view = st.radio(
+    "Navegação",
+    ["📊 Dashboard", "📅 Calendário"],
+    horizontal=True,
+    label_visibility="collapsed",
+)
+st.markdown("---")
 
 # ==========================================================================
 # TAB 1 — DASHBOARD
 # ==========================================================================
-with tab_dashboard:
+if view == "📊 Dashboard":
     # ---------------- KPI METRICS ----------------
     k1, k2, k3, k4 = st.columns(4)
     k1.metric("Total de Cirurgias", len(filtered))
@@ -604,7 +625,7 @@ with tab_dashboard:
 # ==========================================================================
 # TAB 2 — CALENDÁRIO (Google Calendar-style month view)
 # ==========================================================================
-with tab_calendar:
+if view == "📅 Calendário":
     st.markdown("### 📅 Calendário de Cirurgias")
     st.caption("Uma linha por cirurgia (Hora · Processo · Especialidade). Passe o rato por cima para ver todos os detalhes.")
 
