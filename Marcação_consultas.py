@@ -4,46 +4,35 @@ ULS Médio Ave — Painel de Agenda Cirúrgica (Hospital Surgery Schedule)
 Streamlit dashboard that reads surgery-schedule data live from a Google
 Sheet and lets the user filter by Data (Date), Mês (Month), Processo
 (Process), Médico (Doctor) and Bloco (Operating block/room).
-
 HOW TO RUN
 ----------
 1. pip install -r requirements.txt
 2. streamlit run app.py
-
 DATA SOURCE
 -----------
 The app reads the Google Sheet below as a live CSV export. For this to
 work, the sheet must be shared as "Anyone with the link -> Viewer".
 If your data lives on a specific tab (not the first one), set GID below
 to that tab's gid (found in the sheet's URL after "gid=").
-
 REQUIRED companion file: .streamlit/config.toml (theme.base = "light")
 must sit at the repo root next to this file, or Streamlit Cloud may
 follow the visitor's OS dark-mode setting instead of this app's palette.
 """
-
 import calendar as pycal
 import html as html_lib
 import io
 import re
 from datetime import datetime
-
 import pandas as pd
 import streamlit as st
 import streamlit.components.v1 as components
-
 # --------------------------------------------------------------------------
 # CONFIG
 # --------------------------------------------------------------------------
 SHEET_ID = "1tt7-2kCdeJmUbtYaKVkNnZ0EptzcHj-aNhQWF_CIF40"
 GID = "0"  # change if your data is on another tab
 CSV_URL = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/export?format=csv&gid={GID}"
-
 LOGO_PATH = "https://raw.githubusercontent.com/paulom40/ULS-MEDIO-AVE/main/Logo_5.-ULS-MEDIO-AVE.png"
-
-# Where the bottom-right GitHub / Streamlit badge links should send visitors.
-BADGE_REDIRECT_URL = "https://share.streamlit.io/user/paulom40"
-
 # Column names expected in the sheet — edit here if your headers differ.
 COL_DATA = "Data"
 COL_MES = "Mês"
@@ -53,12 +42,10 @@ COL_BLOCO = "Bloco"
 COL_HORA = "Hora"
 COL_ESPECIALIDADE = "Especialidade"
 COL_INTERVENCAO = "Intervenção"
-
 MESES_PT = [
     "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
     "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro",
 ]
-
 # --------------------------------------------------------------------------
 # PAGE SETUP + HOSPITAL COLOR PALETTE
 # --------------------------------------------------------------------------
@@ -68,7 +55,6 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded",
 )
-
 PRIMARY = "#0277BD"      # hospital blue
 PRIMARY_DARK = "#01579B"
 ACCENT = "#00897B"       # clinical teal accent
@@ -78,7 +64,6 @@ CARD_BG = "#FFFFFF"
 TEXT = "#1C2B2D"
 WARN = "#D84315"         # soft alert red-orange
 GRID = "#DCE7ED"
-
 st.markdown(
     f"""
     <style>
@@ -86,7 +71,6 @@ st.markdown(
             background-color: {BG};
             color: {TEXT};
         }}
-
         /* Header: DON'T hide the header element itself (it hosts the control
            that re-opens a collapsed sidebar). Make it transparent and hide
            only the unwanted pieces: deploy button, main menu, decoration. */
@@ -105,6 +89,18 @@ st.markdown(
         }}
         [data-testid="stStatusWidget"] {{
             visibility: hidden !important;
+        }}
+        /* Hide Streamlit Cloud viewer / profile badges (bottom-right) */
+        [class*="viewerBadge"],
+        [class*="profileContainer"],
+        [class*="profilePreview"],
+        [class*="stAppToolbar"],
+        a[href*="share.streamlit.io"],
+        a[href*="streamlit.io/user"],
+        a[href*="github.com"] {{
+            display: none !important;
+            visibility: hidden !important;
+            pointer-events: none !important;
         }}
         /* Sidebar open/close controls — Streamlit has renamed these across
            versions, so every known name is covered. Always visible, dark,
@@ -127,7 +123,6 @@ st.markdown(
             display: flex !important;
             z-index: 999999 !important;
         }}
-
         section[data-testid="stSidebar"] {{
             background-color: {SIDEBAR_BG};
             border-right: 1px solid {GRID};
@@ -139,7 +134,6 @@ st.markdown(
             color: {PRIMARY_DARK};
             font-family: 'Segoe UI', sans-serif;
         }}
-
         /* --- Fix dark/black input widgets so they match the light theme --- */
         div[data-baseweb="select"] > div,
         div[data-baseweb="input"] > div,
@@ -188,7 +182,6 @@ st.markdown(
             background-color: {PRIMARY_DARK} !important;
             color: #FFFFFF !important;
         }}
-
         /* Sidebar multiselect / date-input controls — target Streamlit's
            official stable widget wrapper classes and force every descendant
            to white, since the internal component structure isn't a reliable
@@ -233,7 +226,6 @@ st.markdown(
             background-color: #FFFFFF !important;
             color: {TEXT} !important;
         }}
-
         div[data-testid="stMetric"] {{
             background-color: {CARD_BG};
             border: 1px solid {GRID};
@@ -293,7 +285,6 @@ st.markdown(
             opacity: 0.9;
             font-size: 0.9rem;
         }}
-
         /* Dashboard / Calendário switcher (st.radio, styled as segmented
            buttons — used instead of st.tabs since the tabs widget's
            internal text color could not be reached/overridden reliably) */
@@ -331,7 +322,6 @@ st.markdown(
         [data-testid="stRadio"] input {{
             display: none !important;
         }}
-
         /* --- Calendar tab --- */
         .cal-grid {{
             display: grid;
@@ -397,7 +387,6 @@ st.markdown(
         .cal-event:hover {{
             filter: brightness(1.15);
         }}
-
         /* --- Mobile agenda view (shown instead of the grid on small screens) --- */
         .cal-mobile {{
             display: none;
@@ -437,7 +426,6 @@ st.markdown(
         .agenda-field b {{
             color: {PRIMARY_DARK};
         }}
-
         /* --- Mobile / small-screen adjustments --- */
         @media (max-width: 700px) {{
             div[data-testid="stHorizontalBlock"] {{
@@ -474,71 +462,13 @@ st.markdown(
     """,
     unsafe_allow_html=True,
 )
-
-# --------------------------------------------------------------------------
-# Redirect the bottom-right GitHub / Streamlit badge links.
-# The badges are added by the hosting page, so this small script runs in the
-# parent page: it rewrites their href and also intercepts clicks, sending
-# visitors to BADGE_REDIRECT_URL instead of the GitHub account. Best-effort:
-# silently does nothing if the browser blocks access to the parent page.
-# --------------------------------------------------------------------------
-components.html(
-    """
-    <script>
-    (function () {
-      var TARGET = "__TARGET__";
-      var doc, win;
-      try { win = window.parent; doc = win.document; } catch (e) { return; }
-      var LINKS = 'a[href*="github.com"], a[href*="streamlit.io"], ' +
-                  '[class*="viewerBadge"] a, [class*="profileContainer"] a, ' +
-                  '[class*="profilePreview"] a';
-      function isTarget(a) {
-        return (a.getAttribute("href") || "").indexOf(TARGET) === 0;
-      }
-      function rewrite() {
-        try {
-          doc.querySelectorAll(LINKS).forEach(function (a) {
-            if (isTarget(a)) return;
-            a.setAttribute("href", TARGET);
-            a.setAttribute("target", "_blank");
-            a.setAttribute("rel", "noopener noreferrer");
-          });
-        } catch (e) {}
-      }
-      rewrite();
-      try {
-        new win.MutationObserver(rewrite).observe(doc.body, { childList: true, subtree: true });
-      } catch (e) {}
-      setInterval(rewrite, 1500);
-
-      // Safety net: if a click still reaches the original GitHub/Streamlit
-      // link (e.g. the page re-rendered it), send it to TARGET instead.
-      if (!win.__ulsBadgeRedirect) {
-        win.__ulsBadgeRedirect = true;
-        doc.addEventListener("click", function (ev) {
-          var a = ev.target && ev.target.closest ? ev.target.closest(LINKS) : null;
-          if (a && !isTarget(a)) {
-            ev.preventDefault();
-            ev.stopPropagation();
-            win.open(TARGET, "_blank", "noopener");
-          }
-        }, true);
-      }
-    })();
-    </script>
-    """.replace("__TARGET__", BADGE_REDIRECT_URL),
-    height=0,
-)
-
 # --------------------------------------------------------------------------
 # LOGIN GATE
 # --------------------------------------------------------------------------
 VALID_USER = "0000"
 VALID_PASSWORD = "0000"
-
 if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
-
 if not st.session_state.authenticated:
     col_a, col_b, col_c = st.columns([1, 1.2, 1])
     with col_b:
@@ -566,7 +496,6 @@ if not st.session_state.authenticated:
                 else:
                     st.error("Utilizador ou palavra-passe incorretos.")
     st.stop()
-
 # --------------------------------------------------------------------------
 # HEADER — logo top-left + title banner
 # --------------------------------------------------------------------------
@@ -586,7 +515,6 @@ with col_title:
         """,
         unsafe_allow_html=True,
     )
-
 # --------------------------------------------------------------------------
 # DATA LOADING
 # --------------------------------------------------------------------------
@@ -595,8 +523,6 @@ def load_data(url: str) -> pd.DataFrame:
     df = pd.read_csv(url)
     df.columns = [str(c).strip() for c in df.columns]
     return df
-
-
 def normalize_month_pt(series: pd.Series) -> pd.Series:
     """Map month numbers/names to standard Portuguese month names."""
     def to_month_name(val):
@@ -613,8 +539,6 @@ def normalize_month_pt(series: pd.Series) -> pd.Series:
                 return m
         return s
     return series.apply(to_month_name)
-
-
 try:
     raw_df = load_data(CSV_URL)
 except Exception as e:
@@ -626,15 +550,12 @@ except Exception as e:
         f"Detalhe técnico: {e}"
     )
     st.stop()
-
 df = raw_df.copy()
-
 # Parse date column
 if COL_DATA in df.columns:
     df[COL_DATA] = pd.to_datetime(df[COL_DATA], errors="coerce", dayfirst=True)
 else:
     st.warning(f"Coluna '{COL_DATA}' não encontrada na folha. Ajuste COL_DATA no script.")
-
 # Derive/normalize Mês column
 if COL_MES in df.columns:
     df[COL_MES] = normalize_month_pt(df[COL_MES])
@@ -642,7 +563,6 @@ elif COL_DATA in df.columns:
     df[COL_MES] = df[COL_DATA].dt.month.apply(
         lambda m: MESES_PT[int(m) - 1] if pd.notna(m) else None
     )
-
 # --------------------------------------------------------------------------
 # SIDEBAR FILTERS
 # --------------------------------------------------------------------------
@@ -652,9 +572,7 @@ except Exception:
     pass
 st.sidebar.markdown("## 🔍 Filtros")
 st.sidebar.markdown("---")
-
 filtered = df.copy()
-
 # Data (date range) filter
 if COL_DATA in df.columns and df[COL_DATA].notna().any():
     min_date = df[COL_DATA].min().date()
@@ -672,7 +590,6 @@ if COL_DATA in df.columns and df[COL_DATA].notna().any():
         filtered = filtered[
             (filtered[COL_DATA].dt.date >= start) & (filtered[COL_DATA].dt.date <= end)
         ]
-
 # Mês filter
 if COL_MES in df.columns:
     st.sidebar.markdown("**🗓️ Mês**")
@@ -682,7 +599,6 @@ if COL_MES in df.columns:
     sel_mes = st.sidebar.multiselect("Selecionar mês(es)", opcoes_mes, default=[], label_visibility="collapsed")
     if sel_mes:
         filtered = filtered[filtered[COL_MES].isin(sel_mes)]
-
 # Processo filter
 if COL_PROCESSO in df.columns:
     st.sidebar.markdown("**🧾 Processo**")
@@ -690,7 +606,6 @@ if COL_PROCESSO in df.columns:
     sel_proc = st.sidebar.multiselect("Selecionar processo(s)", proc_opts, default=[], label_visibility="collapsed")
     if sel_proc:
         filtered = filtered[filtered[COL_PROCESSO].astype(str).isin(sel_proc)]
-
 # Médico filter
 if COL_MEDICO in df.columns:
     st.sidebar.markdown("**👨‍⚕️ Médico**")
@@ -698,7 +613,6 @@ if COL_MEDICO in df.columns:
     sel_med = st.sidebar.multiselect("Selecionar médico(s)", med_opts, default=[], label_visibility="collapsed")
     if sel_med:
         filtered = filtered[filtered[COL_MEDICO].astype(str).isin(sel_med)]
-
 # Bloco filter
 if COL_BLOCO in df.columns:
     st.sidebar.markdown("**🚪 Bloco**")
@@ -706,7 +620,6 @@ if COL_BLOCO in df.columns:
     sel_bloco = st.sidebar.multiselect("Selecionar bloco(s)", bloco_opts, default=[], label_visibility="collapsed")
     if sel_bloco:
         filtered = filtered[filtered[COL_BLOCO].astype(str).isin(sel_bloco)]
-
 st.sidebar.markdown("---")
 if st.sidebar.button("🔄 Atualizar dados"):
     st.cache_data.clear()
@@ -714,15 +627,11 @@ if st.sidebar.button("🔄 Atualizar dados"):
 if st.sidebar.button("🚪 Terminar sessão"):
     st.session_state.authenticated = False
     st.rerun()
-
-
 def to_excel_bytes(data: pd.DataFrame) -> bytes:
     buffer = io.BytesIO()
     with pd.ExcelWriter(buffer, engine="openpyxl") as writer:
         data.to_excel(writer, index=False, sheet_name="Agenda Cirurgica")
     return buffer.getvalue()
-
-
 def safe(row, col):
     """Return a clean string for a field, or '—' if missing/empty."""
     if col not in row.index:
@@ -731,8 +640,6 @@ def safe(row, col):
     if pd.isna(val) or str(val).strip() == "":
         return "—"
     return str(val).strip()
-
-
 st.markdown("")
 view = st.radio(
     "Navegação",
@@ -741,7 +648,6 @@ view = st.radio(
     label_visibility="collapsed",
 )
 st.markdown("---")
-
 # ==========================================================================
 # VIEW 1 — DASHBOARD
 # ==========================================================================
@@ -752,9 +658,7 @@ if view == "📊 Dashboard":
     k2.metric("Médicos Distintos", filtered[COL_MEDICO].nunique() if COL_MEDICO in filtered.columns else "—")
     k3.metric("Blocos em Uso", filtered[COL_BLOCO].nunique() if COL_BLOCO in filtered.columns else "—")
     k4.metric("Processos", filtered[COL_PROCESSO].nunique() if COL_PROCESSO in filtered.columns else "—")
-
     st.markdown("---")
-
     # ---------------- DATA TABLE ----------------
     # st.dataframe renders on an HTML canvas, so plain CSS can't recolor its
     # cells — we style the data itself via a pandas Styler instead.
@@ -764,7 +668,6 @@ if view == "📊 Dashboard":
         "color": TEXT,
     })
     st.dataframe(table_style, use_container_width=True, hide_index=True)
-
     dl_col1, dl_col2 = st.columns(2)
     with dl_col1:
         st.download_button(
@@ -782,74 +685,58 @@ if view == "📊 Dashboard":
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             use_container_width=True,
         )
-
     st.caption("Fonte: Google Sheets (ULS Médio Ave) · Atualizado automaticamente a cada 5 minutos.")
-
 # ==========================================================================
 # VIEW 2 — CALENDÁRIO (Google Calendar-style month view + mobile agenda)
 # ==========================================================================
 if view == "📅 Calendário":
     st.markdown("### 📅 Calendário de Cirurgias")
     st.caption("Uma linha por cirurgia (Hora · Processo · Especialidade). Passe o rato por cima para ver todos os detalhes (no telemóvel, todos os campos aparecem diretamente).")
-
     if COL_DATA not in filtered.columns or filtered[COL_DATA].dropna().empty:
         st.info("Sem datas disponíveis para mostrar no calendário com os filtros atuais.")
     else:
         cal_df = filtered.dropna(subset=[COL_DATA]).copy()
         cal_df["_year"] = cal_df[COL_DATA].dt.year
         cal_df["_month"] = cal_df[COL_DATA].dt.month
-
         year_months = sorted(
             {(int(y), int(m)) for y, m in zip(cal_df["_year"], cal_df["_month"])}
         )
-
         if not year_months:
             st.info("Sem datas disponíveis para mostrar no calendário com os filtros atuais.")
         else:
             option_labels = [f"{MESES_PT[m - 1]} {y}" for y, m in year_months]
-
             today = datetime.now()
             default_idx = 0
             for i, (y, m) in enumerate(year_months):
                 if (y, m) <= (today.year, today.month):
                     default_idx = i
-
             sel_label = st.selectbox("Mês a visualizar", option_labels, index=default_idx)
             sel_year, sel_month = year_months[option_labels.index(sel_label)]
-
             month_events = cal_df[(cal_df["_year"] == sel_year) & (cal_df["_month"] == sel_month)]
-
             # Sort each day's surgeries by Hora when available
             if COL_HORA in month_events.columns:
                 month_events = month_events.sort_values(by=[COL_DATA, COL_HORA])
             else:
                 month_events = month_events.sort_values(by=[COL_DATA])
-
             events_by_day = {}
             for _, row in month_events.iterrows():
                 day = row[COL_DATA].day
                 events_by_day.setdefault(day, []).append(row)
-
             pycal.setfirstweekday(pycal.MONDAY)
             weeks = pycal.monthcalendar(sel_year, sel_month)
             dow_labels = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"]
-
             is_current_month = (sel_year == today.year and sel_month == today.month)
-
             # ---- DESKTOP: month grid (Google Calendar style) ----
             html_parts = ['<div class="cal-desktop"><div class="cal-grid">']
             for lbl in dow_labels:
                 html_parts.append(f'<div class="cal-dow">{lbl}</div>')
-
             for week in weeks:
                 for day in week:
                     if day == 0:
                         html_parts.append('<div class="cal-cell empty"></div>')
                         continue
-
                     is_today = is_current_month and day == today.day
                     cell_classes = "cal-cell" + (" today" if is_today else "")
-
                     events_html = ""
                     for row in events_by_day.get(day, []):
                         hora = safe(row, COL_HORA)
@@ -858,7 +745,6 @@ if view == "📅 Calendário":
                         intervencao = safe(row, COL_INTERVENCAO)
                         medico = safe(row, COL_MEDICO)
                         bloco = safe(row, COL_BLOCO)
-
                         one_line = html_lib.escape(f"{hora} · {processo} · {especialidade}")
                         full_detail = html_lib.escape(
                             f"Hora: {hora}\n"
@@ -869,7 +755,6 @@ if view == "📅 Calendário":
                             f"Bloco: {bloco}"
                         )
                         events_html += f'<div class="cal-event" title="{full_detail}">{one_line}</div>'
-
                     html_parts.append(
                         f'<div class="{cell_classes}">'
                         f'<div class="cal-daynum">{day}</div>'
@@ -877,7 +762,6 @@ if view == "📅 Calendário":
                         f'</div>'
                     )
             html_parts.append('</div></div>')
-
             # ---- MOBILE: vertical agenda list (one card per surgery, no hover needed) ----
             html_parts.append('<div class="cal-mobile">')
             days_with_events = sorted(events_by_day.keys())
@@ -906,9 +790,7 @@ if view == "📅 Calendário":
                     )
                 html_parts.append('</div>')
             html_parts.append('</div>')
-
             st.markdown("".join(html_parts), unsafe_allow_html=True)
-
             st.markdown("")
             month_export = month_events.drop(columns=["_year", "_month"], errors="ignore")
             st.download_button(
