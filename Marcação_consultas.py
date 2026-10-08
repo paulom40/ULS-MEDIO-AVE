@@ -16,6 +16,10 @@ The app reads the Google Sheet below as a live CSV export. For this to
 work, the sheet must be shared as "Anyone with the link -> Viewer".
 If your data lives on a specific tab (not the first one), set GID below
 to that tab's gid (found in the sheet's URL after "gid=").
+
+REQUIRED companion file: .streamlit/config.toml (theme.base = "light")
+must sit at the repo root next to this file, or Streamlit Cloud may
+follow the visitor's OS dark-mode setting instead of this app's palette.
 """
 
 import calendar as pycal
@@ -79,14 +83,50 @@ st.markdown(
             color: {TEXT};
         }}
 
-        /* Hide Streamlit's own top header (menu / GitHub icon) and footer */
-        header {{
-            visibility: hidden;
-            height: 0;
+        /* Header: DON'T hide the header element itself (it hosts the control
+           that re-opens a collapsed sidebar). Make it transparent and hide
+           only the unwanted pieces: deploy button, main menu, decoration. */
+        header[data-testid="stHeader"] {{
+            background: transparent !important;
+        }}
+        [data-testid="stAppDeployButton"],
+        [data-testid="stMainMenu"],
+        [data-testid="stDecoration"],
+        .stDeployButton {{
+            display: none !important;
         }}
         footer {{
             visibility: hidden;
             height: 0;
+        }}
+        /* Hide any GitHub / Streamlit badge links injected by the hosting platform */
+        a[href*="github.com"],
+        a[href*="streamlit.io"] {{
+            display: none !important;
+        }}
+        [data-testid="stStatusWidget"] {{
+            visibility: hidden !important;
+        }}
+        /* Sidebar open/close controls — Streamlit has renamed these across
+           versions, so every known name is covered. Always visible, dark,
+           and on top, so a collapsed sidebar can always be re-opened. */
+        [data-testid="collapsedControl"],
+        [data-testid="stSidebarCollapsedControl"],
+        [data-testid="stExpandSidebarButton"],
+        [data-testid="stSidebarCollapseButton"],
+        [data-testid="collapsedControl"] *,
+        [data-testid="stSidebarCollapsedControl"] *,
+        [data-testid="stExpandSidebarButton"] *,
+        [data-testid="stSidebarCollapseButton"] * {{
+            visibility: visible !important;
+            opacity: 1 !important;
+            color: {PRIMARY_DARK} !important;
+        }}
+        [data-testid="collapsedControl"],
+        [data-testid="stSidebarCollapsedControl"],
+        [data-testid="stExpandSidebarButton"] {{
+            display: flex !important;
+            z-index: 999999 !important;
         }}
 
         section[data-testid="stSidebar"] {{
@@ -117,9 +157,37 @@ st.markdown(
             border: 1px solid {GRID} !important;
             border-radius: 6px !important;
         }}
+        div[data-baseweb="select"] span,
+        div[data-baseweb="tag"] {{
+            color: {TEXT} !important;
+        }}
+        div[data-baseweb="tag"] {{
+            background-color: {PRIMARY} !important;
+        }}
+        div[data-baseweb="tag"] span {{
+            color: #FFFFFF !important;
+        }}
+        ul[data-baseweb="menu"] {{
+            background-color: #FFFFFF !important;
+            color: {TEXT} !important;
+        }}
+        ul[data-baseweb="menu"] li:hover {{
+            background-color: {SIDEBAR_BG} !important;
+        }}
         /* Password show/hide eye icon button */
         div[data-baseweb="input"] button {{
             background-color: transparent !important;
+        }}
+        /* Form submit buttons (e.g. the login "Entrar" button) */
+        div[data-testid="stFormSubmitButton"] button {{
+            background-color: {PRIMARY} !important;
+            color: #FFFFFF !important;
+            border: none !important;
+            border-radius: 6px !important;
+        }}
+        div[data-testid="stFormSubmitButton"] button:hover {{
+            background-color: {PRIMARY_DARK} !important;
+            color: #FFFFFF !important;
         }}
 
         /* Sidebar multiselect / date-input controls — target Streamlit's
@@ -167,80 +235,6 @@ st.markdown(
             color: {TEXT} !important;
         }}
 
-        /* Dashboard / Calendário switcher (st.radio, styled as segmented
-           buttons — using this instead of st.tabs since the tabs widget's
-           internal text color could not be reached/overridden reliably) */
-        [data-testid="stRadio"] {{
-            background-color: transparent !important;
-        }}
-        [data-testid="stRadio"] > div {{
-            display: flex;
-            flex-direction: row;
-            gap: 10px;
-        }}
-        [data-testid="stRadio"] label {{
-            background-color: {SIDEBAR_BG} !important;
-            color: {TEXT} !important;
-            opacity: 1 !important;
-            padding: 8px 18px !important;
-            border-radius: 8px !important;
-            border: 1px solid {GRID} !important;
-            font-weight: 600 !important;
-            cursor: pointer;
-        }}
-        [data-testid="stRadio"] label * {{
-            color: {TEXT} !important;
-            opacity: 1 !important;
-        }}
-        [data-testid="stRadio"] label[data-checked="true"],
-        [data-testid="stRadio"] label:has(input:checked) {{
-            background-color: {PRIMARY} !important;
-            border-color: {PRIMARY} !important;
-        }}
-        [data-testid="stRadio"] label[data-checked="true"] *,
-        [data-testid="stRadio"] label:has(input:checked) * {{
-            color: #FFFFFF !important;
-        }}
-        [data-testid="stRadio"] input {{
-            display: none !important;
-        }}
-        /* Form submit buttons (e.g. the login "Entrar" button) */
-        div[data-testid="stFormSubmitButton"] button {{
-            background-color: {PRIMARY} !important;
-            color: #FFFFFF !important;
-            border: none !important;
-            border-radius: 6px !important;
-        }}
-        div[data-testid="stFormSubmitButton"] button:hover {{
-            background-color: {PRIMARY_DARK} !important;
-            color: #FFFFFF !important;
-        }}
-        /* Hide any GitHub / Streamlit badge links injected by the hosting platform */
-        a[href*="github.com"],
-        a[href*="streamlit.io"] {{
-            display: none !important;
-        }}
-        [data-testid="stStatusWidget"] {{
-            visibility: hidden !important;
-        }}
-        div[data-baseweb="select"] span,
-        div[data-baseweb="tag"] {{
-            color: {TEXT} !important;
-        }}
-        div[data-baseweb="tag"] {{
-            background-color: {PRIMARY} !important;
-        }}
-        div[data-baseweb="tag"] span {{
-            color: #FFFFFF !important;
-        }}
-        ul[data-baseweb="menu"] {{
-            background-color: #FFFFFF !important;
-            color: {TEXT} !important;
-        }}
-        ul[data-baseweb="menu"] li:hover {{
-            background-color: {SIDEBAR_BG} !important;
-        }}
-
         div[data-testid="stMetric"] {{
             background-color: {CARD_BG};
             border: 1px solid {GRID};
@@ -249,6 +243,9 @@ st.markdown(
             padding: 14px 16px;
             box-shadow: 0 1px 4px rgba(0,0,0,0.05);
         }}
+        /* Metric label/value — !important + opacity:1 because Streamlit's
+           own default styling for these is a low-opacity gray that a plain
+           color override does not fully replace */
         [data-testid="stMetricLabel"],
         [data-testid="stMetricLabel"] * {{
             color: {PRIMARY_DARK} !important;
@@ -296,6 +293,44 @@ st.markdown(
             margin: 0;
             opacity: 0.9;
             font-size: 0.9rem;
+        }}
+
+        /* Dashboard / Calendário switcher (st.radio, styled as segmented
+           buttons — used instead of st.tabs since the tabs widget's
+           internal text color could not be reached/overridden reliably) */
+        [data-testid="stRadio"] {{
+            background-color: transparent !important;
+        }}
+        [data-testid="stRadio"] > div {{
+            display: flex;
+            flex-direction: row;
+            gap: 10px;
+        }}
+        [data-testid="stRadio"] label {{
+            background-color: {SIDEBAR_BG} !important;
+            color: {TEXT} !important;
+            opacity: 1 !important;
+            padding: 8px 18px !important;
+            border-radius: 8px !important;
+            border: 1px solid {GRID} !important;
+            font-weight: 600 !important;
+            cursor: pointer;
+        }}
+        [data-testid="stRadio"] label * {{
+            color: {TEXT} !important;
+            opacity: 1 !important;
+        }}
+        [data-testid="stRadio"] label[data-checked="true"],
+        [data-testid="stRadio"] label:has(input:checked) {{
+            background-color: {PRIMARY} !important;
+            border-color: {PRIMARY} !important;
+        }}
+        [data-testid="stRadio"] label[data-checked="true"] *,
+        [data-testid="stRadio"] label:has(input:checked) * {{
+            color: #FFFFFF !important;
+        }}
+        [data-testid="stRadio"] input {{
+            display: none !important;
         }}
 
         /* --- Calendar tab --- */
@@ -362,6 +397,79 @@ st.markdown(
         }}
         .cal-event:hover {{
             filter: brightness(1.15);
+        }}
+
+        /* --- Mobile agenda view (shown instead of the grid on small screens) --- */
+        .cal-mobile {{
+            display: none;
+        }}
+        .agenda-day {{
+            margin-bottom: 16px;
+        }}
+        .agenda-day-header {{
+            background-color: {PRIMARY_DARK};
+            color: #FFFFFF;
+            padding: 7px 12px;
+            border-radius: 6px;
+            font-weight: 700;
+            font-size: 0.95rem;
+            margin-bottom: 8px;
+        }}
+        .agenda-card {{
+            border: 1px solid {GRID};
+            border-left: 5px solid {ACCENT};
+            border-radius: 8px;
+            padding: 10px 12px;
+            margin-bottom: 8px;
+            background-color: {CARD_BG};
+            font-size: 0.88rem;
+            line-height: 1.55;
+        }}
+        .agenda-hora {{
+            display: inline-block;
+            background-color: {PRIMARY};
+            color: #FFFFFF;
+            font-weight: 700;
+            font-size: 0.85rem;
+            padding: 2px 9px;
+            border-radius: 12px;
+            margin-bottom: 6px;
+        }}
+        .agenda-field b {{
+            color: {PRIMARY_DARK};
+        }}
+
+        /* --- Mobile / small-screen adjustments --- */
+        @media (max-width: 700px) {{
+            div[data-testid="stHorizontalBlock"] {{
+                flex-direction: column !important;
+            }}
+            div[data-testid="stHorizontalBlock"] div[data-testid="column"] {{
+                width: 100% !important;
+                min-width: 100% !important;
+            }}
+            .top-banner {{
+                padding: 10px 14px;
+            }}
+            .top-banner h1 {{
+                font-size: 1.15rem;
+            }}
+            .top-banner p {{
+                font-size: 0.8rem;
+            }}
+            div[data-testid="stMetric"] {{
+                padding: 10px 12px;
+            }}
+            .stButton button, .stDownloadButton button {{
+                padding: 0.6rem 1rem;
+                font-size: 0.95rem;
+            }}
+            .cal-desktop {{
+                display: none !important;
+            }}
+            .cal-mobile {{
+                display: block !important;
+            }}
         }}
     </style>
     """,
@@ -553,6 +661,7 @@ if st.sidebar.button("🚪 Terminar sessão"):
     st.session_state.authenticated = False
     st.rerun()
 
+
 def to_excel_bytes(data: pd.DataFrame) -> bytes:
     buffer = io.BytesIO()
     with pd.ExcelWriter(buffer, engine="openpyxl") as writer:
@@ -580,7 +689,7 @@ view = st.radio(
 st.markdown("---")
 
 # ==========================================================================
-# TAB 1 — DASHBOARD
+# VIEW 1 — DASHBOARD
 # ==========================================================================
 if view == "📊 Dashboard":
     # ---------------- KPI METRICS ----------------
@@ -623,11 +732,11 @@ if view == "📊 Dashboard":
     st.caption("Fonte: Google Sheets (ULS Médio Ave) · Atualizado automaticamente a cada 5 minutos.")
 
 # ==========================================================================
-# TAB 2 — CALENDÁRIO (Google Calendar-style month view)
+# VIEW 2 — CALENDÁRIO (Google Calendar-style month view + mobile agenda)
 # ==========================================================================
 if view == "📅 Calendário":
     st.markdown("### 📅 Calendário de Cirurgias")
-    st.caption("Uma linha por cirurgia (Hora · Processo · Especialidade). Passe o rato por cima para ver todos os detalhes.")
+    st.caption("Uma linha por cirurgia (Hora · Processo · Especialidade). Passe o rato por cima para ver todos os detalhes (no telemóvel, todos os campos aparecem diretamente).")
 
     if COL_DATA not in filtered.columns or filtered[COL_DATA].dropna().empty:
         st.info("Sem datas disponíveis para mostrar no calendário com os filtros atuais.")
@@ -671,11 +780,12 @@ if view == "📅 Calendário":
             weeks = pycal.monthcalendar(sel_year, sel_month)
             dow_labels = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"]
 
-            html_parts = ['<div class="cal-grid">']
+            is_current_month = (sel_year == today.year and sel_month == today.month)
+
+            # ---- DESKTOP: month grid (Google Calendar style) ----
+            html_parts = ['<div class="cal-desktop"><div class="cal-grid">']
             for lbl in dow_labels:
                 html_parts.append(f'<div class="cal-dow">{lbl}</div>')
-
-            is_current_month = (sel_year == today.year and sel_month == today.month)
 
             for week in weeks:
                 for day in week:
@@ -712,6 +822,35 @@ if view == "📅 Calendário":
                         f'<div class="cal-events">{events_html}</div>'
                         f'</div>'
                     )
+            html_parts.append('</div></div>')
+
+            # ---- MOBILE: vertical agenda list (one card per surgery, no hover needed) ----
+            html_parts.append('<div class="cal-mobile">')
+            days_with_events = sorted(events_by_day.keys())
+            if not days_with_events:
+                html_parts.append('<p>Sem cirurgias agendadas este mês.</p>')
+            for day in days_with_events:
+                is_today = is_current_month and day == today.day
+                day_label = html_lib.escape(f"{day:02d} {MESES_PT[sel_month - 1]}" + (" · Hoje" if is_today else ""))
+                html_parts.append(f'<div class="agenda-day"><div class="agenda-day-header">{day_label}</div>')
+                for row in events_by_day[day]:
+                    hora = html_lib.escape(safe(row, COL_HORA))
+                    processo = html_lib.escape(safe(row, COL_PROCESSO))
+                    especialidade = html_lib.escape(safe(row, COL_ESPECIALIDADE))
+                    intervencao = html_lib.escape(safe(row, COL_INTERVENCAO))
+                    medico = html_lib.escape(safe(row, COL_MEDICO))
+                    bloco = html_lib.escape(safe(row, COL_BLOCO))
+                    html_parts.append(
+                        '<div class="agenda-card">'
+                        f'<span class="agenda-hora">🕐 {hora}</span>'
+                        f'<div class="agenda-field"><b>Processo:</b> {processo}</div>'
+                        f'<div class="agenda-field"><b>Especialidade:</b> {especialidade}</div>'
+                        f'<div class="agenda-field"><b>Intervenção:</b> {intervencao}</div>'
+                        f'<div class="agenda-field"><b>Médico:</b> {medico}</div>'
+                        f'<div class="agenda-field"><b>Bloco:</b> {bloco}</div>'
+                        '</div>'
+                    )
+                html_parts.append('</div>')
             html_parts.append('</div>')
 
             st.markdown("".join(html_parts), unsafe_allow_html=True)
