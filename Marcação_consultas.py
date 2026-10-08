@@ -77,9 +77,6 @@ st.markdown(
             background-color: {BG};
             color: {TEXT};
         }}
-        /* Header: DON'T hide the header element itself (it hosts the control
-           that re-opens a collapsed sidebar). Make it transparent and hide
-           only the unwanted pieces: deploy button, main menu, decoration. */
         header[data-testid="stHeader"] {{
             background: transparent !important;
         }}
@@ -97,29 +94,18 @@ st.markdown(
             visibility: hidden !important;
         }}
 
-        /* ===== Hide Streamlit Cloud badges (bottom-right) ===== */
+        /* Tentar esconder o máximo possível do badge */
         [class*="viewerBadge"],
         [class*="profileContainer"],
         [class*="profilePreview"],
         [class*="stAppToolbar"],
-        [data-testid="stStatusWidget"],
         a[href*="share.streamlit.io"],
         a[href*="streamlit.io/user"],
-        a[href*="github.com"],
-        footer,
-        #MainMenu {{
-            display: none !important;
-            visibility: hidden !important;
-            opacity: 0 !important;
+        a[href*="github.com"] {{
             pointer-events: none !important;
-            height: 0 !important;
-            width: 0 !important;
-            overflow: hidden !important;
         }}
 
-        /* Sidebar open/close controls — Streamlit has renamed these across
-           versions, so every known name is covered. Always visible, dark,
-           and on top, so a collapsed sidebar can always be re-opened. */
+        /* Sidebar open/close controls */
         [data-testid="collapsedControl"],
         [data-testid="stSidebarCollapsedControl"],
         [data-testid="stExpandSidebarButton"],
@@ -149,7 +135,7 @@ st.markdown(
             color: {PRIMARY_DARK};
             font-family: 'Segoe UI', sans-serif;
         }}
-        /* --- Fix dark/black input widgets so they match the light theme --- */
+        /* Fix dark/black input widgets */
         div[data-baseweb="select"] > div,
         div[data-baseweb="input"] > div,
         div[data-baseweb="base-input"],
@@ -182,11 +168,9 @@ st.markdown(
         ul[data-baseweb="menu"] li:hover {{
             background-color: {SIDEBAR_BG} !important;
         }}
-        /* Password show/hide eye icon button */
         div[data-baseweb="input"] button {{
             background-color: transparent !important;
         }}
-        /* Form submit buttons (e.g. the login "Entrar" button) */
         div[data-testid="stFormSubmitButton"] button {{
             background-color: {PRIMARY} !important;
             color: #FFFFFF !important;
@@ -197,7 +181,6 @@ st.markdown(
             background-color: {PRIMARY_DARK} !important;
             color: #FFFFFF !important;
         }}
-        /* Sidebar multiselect / date-input controls */
         [data-testid="stDateInput"] *,
         [data-testid="stMultiSelect"] *,
         [data-testid="stSelectbox"] * {{
@@ -216,7 +199,6 @@ st.markdown(
             border: 1px solid {GRID} !important;
             border-radius: 6px !important;
         }}
-        /* Restore the colored "chip" look for selected multiselect values */
         [data-testid="stMultiSelect"] span[data-baseweb="tag"],
         [data-testid="stMultiSelect"] div[data-baseweb="tag"] {{
             background-color: {PRIMARY} !important;
@@ -226,7 +208,6 @@ st.markdown(
             color: #FFFFFF !important;
             fill: #FFFFFF !important;
         }}
-        /* The dropdown menu that opens on click */
         div[data-baseweb="popover"] * {{
             background-color: #FFFFFF !important;
             color: {TEXT} !important;
@@ -287,7 +268,6 @@ st.markdown(
             opacity: 0.9;
             font-size: 0.9rem;
         }}
-        /* Dashboard / Calendário switcher */
         [data-testid="stRadio"] {{
             background-color: transparent !important;
         }}
@@ -322,7 +302,7 @@ st.markdown(
         [data-testid="stRadio"] input {{
             display: none !important;
         }}
-        /* --- Calendar tab --- */
+        /* Calendar */
         .cal-grid {{
             display: grid;
             grid-template-columns: repeat(7, 1fr);
@@ -387,7 +367,6 @@ st.markdown(
         .cal-event:hover {{
             filter: brightness(1.15);
         }}
-        /* --- Mobile agenda view --- */
         .cal-mobile {{
             display: none;
         }}
@@ -426,7 +405,6 @@ st.markdown(
         .agenda-field b {{
             color: {PRIMARY_DARK};
         }}
-        /* --- Mobile / small-screen adjustments --- */
         @media (max-width: 700px) {{
             div[data-testid="stHorizontalBlock"] {{
                 flex-direction: column !important;
@@ -464,45 +442,45 @@ st.markdown(
 )
 
 # --------------------------------------------------------------------------
-# Force-remove Streamlit Cloud viewer badges (bottom-right)
+# Neutralizar o clique no badge do Streamlit Cloud (canto inferior direito)
+# O badge continua visível, mas o clique não faz nada.
 # --------------------------------------------------------------------------
 components.html(
     """
     <script>
     (function () {
-        function killBadges() {
+        function neutralizeBadges() {
             try {
                 const doc = window.parent.document;
                 const selectors = [
-                    '[class*="viewerBadge"]',
-                    '[class*="profileContainer"]',
-                    '[class*="profilePreview"]',
-                    '[class*="stAppToolbar"]',
-                    '[data-testid="stStatusWidget"]',
                     'a[href*="share.streamlit.io"]',
                     'a[href*="streamlit.io/user"]',
                     'a[href*="github.com"]',
-                    'footer'
+                    '[class*="viewerBadge"] a',
+                    '[class*="profileContainer"] a',
+                    '[class*="profilePreview"] a'
                 ];
                 selectors.forEach(sel => {
-                    doc.querySelectorAll(sel).forEach(el => {
-                        el.style.setProperty('display', 'none', 'important');
-                        el.style.setProperty('visibility', 'hidden', 'important');
-                        el.style.setProperty('opacity', '0', 'important');
-                        el.style.setProperty('pointer-events', 'none', 'important');
-                        el.remove();   // remove completely if possible
+                    doc.querySelectorAll(sel).forEach(a => {
+                        a.removeAttribute('href');
+                        a.style.pointerEvents = 'none';
+                        a.style.cursor = 'default';
+                        a.onclick = function(e) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            return false;
+                        };
                     });
                 });
             } catch (e) {}
         }
 
-        // Run immediately and keep watching
-        killBadges();
-        setInterval(killBadges, 800);
+        // Executa imediatamente e continua a vigiar
+        neutralizeBadges();
+        setInterval(neutralizeBadges, 600);
 
-        // Also watch for DOM changes
         try {
-            const observer = new MutationObserver(killBadges);
+            const observer = new MutationObserver(neutralizeBadges);
             observer.observe(window.parent.document.body, {
                 childList: true,
                 subtree: true
@@ -728,7 +706,6 @@ st.markdown("---")
 # VIEW 1 — DASHBOARD
 # ==========================================================================
 if view == "📊 Dashboard":
-    # ---------------- KPI METRICS ----------------
     k1, k2, k3, k4 = st.columns(4)
     k1.metric("Total de Cirurgias", len(filtered))
     k2.metric("Médicos Distintos", filtered[COL_MEDICO].nunique() if COL_MEDICO in filtered.columns else "—")
@@ -737,7 +714,6 @@ if view == "📊 Dashboard":
 
     st.markdown("---")
 
-    # ---------------- DATA TABLE ----------------
     st.markdown("### 📋 Lista de Cirurgias (filtradas)")
     table_style = filtered.style.set_properties(**{
         "background-color": "#FFFFFF",
@@ -766,7 +742,7 @@ if view == "📊 Dashboard":
     st.caption("Fonte: Google Sheets (ULS Médio Ave) · Atualizado automaticamente a cada 5 minutos.")
 
 # ==========================================================================
-# VIEW 2 — CALENDÁRIO (Google Calendar-style month view + mobile agenda)
+# VIEW 2 — CALENDÁRIO
 # ==========================================================================
 if view == "📅 Calendário":
     st.markdown("### 📅 Calendário de Cirurgias")
@@ -798,7 +774,6 @@ if view == "📅 Calendário":
 
             month_events = cal_df[(cal_df["_year"] == sel_year) & (cal_df["_month"] == sel_month)]
 
-            # Sort each day's surgeries by Hora when available
             if COL_HORA in month_events.columns:
                 month_events = month_events.sort_values(by=[COL_DATA, COL_HORA])
             else:
@@ -814,7 +789,7 @@ if view == "📅 Calendário":
             dow_labels = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"]
             is_current_month = (sel_year == today.year and sel_month == today.month)
 
-            # ---- DESKTOP: month grid (Google Calendar style) ----
+            # DESKTOP grid
             html_parts = ['<div class="cal-desktop"><div class="cal-grid">']
             for lbl in dow_labels:
                 html_parts.append(f'<div class="cal-dow">{lbl}</div>')
@@ -857,7 +832,7 @@ if view == "📅 Calendário":
 
             html_parts.append('</div></div>')
 
-            # ---- MOBILE: vertical agenda list ----
+            # MOBILE agenda
             html_parts.append('<div class="cal-mobile">')
             days_with_events = sorted(events_by_day.keys())
             if not days_with_events:
