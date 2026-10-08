@@ -30,6 +30,7 @@ from datetime import datetime
 
 import pandas as pd
 import streamlit as st
+import streamlit.components.v1 as components
 
 # --------------------------------------------------------------------------
 # CONFIG
@@ -106,6 +107,12 @@ st.markdown(
         }}
         [data-testid="stStatusWidget"] {{
             visibility: hidden !important;
+        }}
+        [class*="viewerBadge"],
+        [class*="profileContainer"],
+        [class*="profilePreview"],
+        [class*="githubLink"] {{
+            display: none !important;
         }}
         /* Sidebar open/close controls — Streamlit has renamed these across
            versions, so every known name is covered. Always visible, dark,
@@ -474,6 +481,48 @@ st.markdown(
     </style>
     """,
     unsafe_allow_html=True,
+)
+
+# --------------------------------------------------------------------------
+# Hide the GitHub / Streamlit badges in the bottom-right corner.
+# CSS inside the app cannot always reach them (the hosting page injects them
+# outside the app's own DOM), so this tiny script runs in the parent page,
+# hides any GitHub/Streamlit link (and its fixed-position wrapper) and keeps
+# doing so if the page re-adds them. Best-effort: silently does nothing if
+# the browser blocks access to the parent page.
+# --------------------------------------------------------------------------
+components.html(
+    """
+    <script>
+    (function () {
+      var doc, win;
+      try { win = window.parent; doc = win.document; } catch (e) { return; }
+      var SELECTORS = [
+        '[class*="viewerBadge"]', '[class*="profileContainer"]',
+        '[class*="profilePreview"]', 'a[href*="github.com"]',
+        'a[href*="streamlit.io"]'
+      ].join(',');
+      function hide() {
+        try {
+          doc.querySelectorAll(SELECTORS).forEach(function (el) {
+            var target = el, p = el;
+            while (p && p !== doc.body) {
+              if (win.getComputedStyle(p).position === 'fixed') { target = p; break; }
+              p = p.parentElement;
+            }
+            target.style.setProperty('display', 'none', 'important');
+          });
+        } catch (e) {}
+      }
+      hide();
+      try {
+        new win.MutationObserver(hide).observe(doc.body, { childList: true, subtree: true });
+      } catch (e) {}
+      setInterval(hide, 1500);
+    })();
+    </script>
+    """,
+    height=0,
 )
 
 # --------------------------------------------------------------------------
