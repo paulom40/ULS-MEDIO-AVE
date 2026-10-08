@@ -41,6 +41,9 @@ CSV_URL = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/export?format=csv&
 
 LOGO_PATH = "https://raw.githubusercontent.com/paulom40/ULS-MEDIO-AVE/main/Logo_5.-ULS-MEDIO-AVE.png"
 
+# Where the bottom-right GitHub / Streamlit badge links should send visitors.
+BADGE_REDIRECT_URL = "https://share.streamlit.io/user/paulom40"
+
 # Column names expected in the sheet — edit here if your headers differ.
 COL_DATA = "Data"
 COL_MES = "Mês"
@@ -100,19 +103,8 @@ st.markdown(
             visibility: hidden;
             height: 0;
         }}
-        /* Hide any GitHub / Streamlit badge links injected by the hosting platform */
-        a[href*="github.com"],
-        a[href*="streamlit.io"] {{
-            display: none !important;
-        }}
         [data-testid="stStatusWidget"] {{
             visibility: hidden !important;
-        }}
-        [class*="viewerBadge"],
-        [class*="profileContainer"],
-        [class*="profilePreview"],
-        [class*="githubLink"] {{
-            display: none !important;
         }}
         /* Sidebar open/close controls — Streamlit has renamed these across
            versions, so every known name is covered. Always visible, dark,
@@ -484,44 +476,57 @@ st.markdown(
 )
 
 # --------------------------------------------------------------------------
-# Hide the GitHub / Streamlit badges in the bottom-right corner.
-# CSS inside the app cannot always reach them (the hosting page injects them
-# outside the app's own DOM), so this tiny script runs in the parent page,
-# hides any GitHub/Streamlit link (and its fixed-position wrapper) and keeps
-# doing so if the page re-adds them. Best-effort: silently does nothing if
-# the browser blocks access to the parent page.
+# Redirect the bottom-right GitHub / Streamlit badge links.
+# The badges are added by the hosting page, so this small script runs in the
+# parent page: it rewrites their href and also intercepts clicks, sending
+# visitors to BADGE_REDIRECT_URL instead of the GitHub account. Best-effort:
+# silently does nothing if the browser blocks access to the parent page.
 # --------------------------------------------------------------------------
 components.html(
     """
     <script>
     (function () {
+      var TARGET = "__TARGET__";
       var doc, win;
       try { win = window.parent; doc = win.document; } catch (e) { return; }
-      var SELECTORS = [
-        '[class*="viewerBadge"]', '[class*="profileContainer"]',
-        '[class*="profilePreview"]', 'a[href*="github.com"]',
-        'a[href*="streamlit.io"]'
-      ].join(',');
-      function hide() {
+      var LINKS = 'a[href*="github.com"], a[href*="streamlit.io"], ' +
+                  '[class*="viewerBadge"] a, [class*="profileContainer"] a, ' +
+                  '[class*="profilePreview"] a';
+      function isTarget(a) {
+        return (a.getAttribute("href") || "").indexOf(TARGET) === 0;
+      }
+      function rewrite() {
         try {
-          doc.querySelectorAll(SELECTORS).forEach(function (el) {
-            var target = el, p = el;
-            while (p && p !== doc.body) {
-              if (win.getComputedStyle(p).position === 'fixed') { target = p; break; }
-              p = p.parentElement;
-            }
-            target.style.setProperty('display', 'none', 'important');
+          doc.querySelectorAll(LINKS).forEach(function (a) {
+            if (isTarget(a)) return;
+            a.setAttribute("href", TARGET);
+            a.setAttribute("target", "_blank");
+            a.setAttribute("rel", "noopener noreferrer");
           });
         } catch (e) {}
       }
-      hide();
+      rewrite();
       try {
-        new win.MutationObserver(hide).observe(doc.body, { childList: true, subtree: true });
+        new win.MutationObserver(rewrite).observe(doc.body, { childList: true, subtree: true });
       } catch (e) {}
-      setInterval(hide, 1500);
+      setInterval(rewrite, 1500);
+
+      // Safety net: if a click still reaches the original GitHub/Streamlit
+      // link (e.g. the page re-rendered it), send it to TARGET instead.
+      if (!win.__ulsBadgeRedirect) {
+        win.__ulsBadgeRedirect = true;
+        doc.addEventListener("click", function (ev) {
+          var a = ev.target && ev.target.closest ? ev.target.closest(LINKS) : null;
+          if (a && !isTarget(a)) {
+            ev.preventDefault();
+            ev.stopPropagation();
+            win.open(TARGET, "_blank", "noopener");
+          }
+        }, true);
+      }
     })();
     </script>
-    """,
+    """.replace("__TARGET__", BADGE_REDIRECT_URL),
     height=0,
 )
 
