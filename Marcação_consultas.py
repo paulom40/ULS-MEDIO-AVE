@@ -4,28 +4,31 @@ ULS Médio Ave — Painel de Agenda Cirúrgica (Hospital Surgery Schedule)
 Streamlit dashboard that reads surgery-schedule data live from a Google
 Sheet and lets the user filter by Data (Date), Mês (Month), Processo
 (Process), Médico (Doctor) and Bloco (Operating block/room).
+
 HOW TO RUN
 ----------
 1. pip install -r requirements.txt
 2. streamlit run app.py
+
 DATA SOURCE
 -----------
 The app reads the Google Sheet below as a live CSV export. For this to
 work, the sheet must be shared as "Anyone with the link -> Viewer".
 If your data lives on a specific tab (not the first one), set GID below
 to that tab's gid (found in the sheet's URL after "gid=").
+
 REQUIRED companion file: .streamlit/config.toml (theme.base = "light")
 must sit at the repo root next to this file, or Streamlit Cloud may
 follow the visitor's OS dark-mode setting instead of this app's palette.
 """
+
 import calendar as pycal
 import html as html_lib
 import io
-import re
 from datetime import datetime
+
 import pandas as pd
 import streamlit as st
-import streamlit.components.v1 as components
 
 # --------------------------------------------------------------------------
 # CONFIG
@@ -94,36 +97,40 @@ st.markdown(
             visibility: hidden !important;
         }}
 
-        /* Tentar esconder o máximo possível do badge */
+        /* Esconder badge / links do Streamlit Cloud (se estiverem no DOM da app) */
         [class*="viewerBadge"],
         [class*="profileContainer"],
         [class*="profilePreview"],
-        [class*="stAppToolbar"],
+        [data-testid="appCreatorAvatar"],
         a[href*="share.streamlit.io"],
         a[href*="streamlit.io/user"],
         a[href*="github.com"] {{
-            pointer-events: none !important;
+            display: none !important;
         }}
 
         /* Sidebar open/close controls */
         [data-testid="collapsedControl"],
         [data-testid="stSidebarCollapsedControl"],
         [data-testid="stExpandSidebarButton"],
-        [data-testid="stSidebarCollapseButton"],
-        [data-testid="collapsedControl"] *,
-        [data-testid="stSidebarCollapsedControl"] *,
-        [data-testid="stExpandSidebarButton"] *,
-        [data-testid="stSidebarCollapseButton"] * {{
-            visibility: visible !important;
-            opacity: 1 !important;
-            color: {PRIMARY_DARK} !important;
-        }}
-        [data-testid="collapsedControl"],
-        [data-testid="stSidebarCollapsedControl"],
-        [data-testid="stExpandSidebarButton"] {{
-            display: flex !important;
+        [data-testid="stSidebarCollapseButton"] {{
+            pointer-events: auto !important;
             z-index: 999999 !important;
         }}
+        [data-testid="collapsedControl"] button,
+        [data-testid="stSidebarCollapsedControl"] button,
+        [data-testid="stExpandSidebarButton"],
+        [data-testid="stExpandSidebarButton"] button,
+        [data-testid="stSidebarCollapseButton"] button {{
+            color: {PRIMARY_DARK} !important;
+        }}
+        [data-testid="collapsedControl"] svg,
+        [data-testid="stSidebarCollapsedControl"] svg,
+        [data-testid="stExpandSidebarButton"] svg,
+        [data-testid="stSidebarCollapseButton"] svg {{
+            fill: {PRIMARY_DARK} !important;
+            color: {PRIMARY_DARK} !important;
+        }}
+
         section[data-testid="stSidebar"] {{
             background-color: {SIDEBAR_BG};
             border-right: 1px solid {GRID};
@@ -442,57 +449,6 @@ st.markdown(
 )
 
 # --------------------------------------------------------------------------
-# Neutralizar o clique no badge do Streamlit Cloud (canto inferior direito)
-# O badge continua visível, mas o clique não faz nada.
-# --------------------------------------------------------------------------
-components.html(
-    """
-    <script>
-    (function () {
-        function neutralizeBadges() {
-            try {
-                const doc = window.parent.document;
-                const selectors = [
-                    'a[href*="share.streamlit.io"]',
-                    'a[href*="streamlit.io/user"]',
-                    'a[href*="github.com"]',
-                    '[class*="viewerBadge"] a',
-                    '[class*="profileContainer"] a',
-                    '[class*="profilePreview"] a'
-                ];
-                selectors.forEach(sel => {
-                    doc.querySelectorAll(sel).forEach(a => {
-                        a.removeAttribute('href');
-                        a.style.pointerEvents = 'none';
-                        a.style.cursor = 'default';
-                        a.onclick = function(e) {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            return false;
-                        };
-                    });
-                });
-            } catch (e) {}
-        }
-
-        // Executa imediatamente e continua a vigiar
-        neutralizeBadges();
-        setInterval(neutralizeBadges, 600);
-
-        try {
-            const observer = new MutationObserver(neutralizeBadges);
-            observer.observe(window.parent.document.body, {
-                childList: true,
-                subtree: true
-            });
-        } catch (e) {}
-    })();
-    </script>
-    """,
-    height=0,
-)
-
-# --------------------------------------------------------------------------
 # LOGIN GATE
 # --------------------------------------------------------------------------
 VALID_USER = "0000"
@@ -558,6 +514,7 @@ def load_data(url: str) -> pd.DataFrame:
     df.columns = [str(c).strip() for c in df.columns]
     return df
 
+
 def normalize_month_pt(series: pd.Series) -> pd.Series:
     """Map month numbers/names to standard Portuguese month names."""
     def to_month_name(val):
@@ -574,6 +531,7 @@ def normalize_month_pt(series: pd.Series) -> pd.Series:
                 return m
         return s
     return series.apply(to_month_name)
+
 
 try:
     raw_df = load_data(CSV_URL)
@@ -678,11 +636,13 @@ if st.sidebar.button("🚪 Terminar sessão"):
     st.session_state.authenticated = False
     st.rerun()
 
+
 def to_excel_bytes(data: pd.DataFrame) -> bytes:
     buffer = io.BytesIO()
     with pd.ExcelWriter(buffer, engine="openpyxl") as writer:
         data.to_excel(writer, index=False, sheet_name="Agenda Cirurgica")
     return buffer.getvalue()
+
 
 def safe(row, col):
     """Return a clean string for a field, or '—' if missing/empty."""
@@ -692,6 +652,7 @@ def safe(row, col):
     if pd.isna(val) or str(val).strip() == "":
         return "—"
     return str(val).strip()
+
 
 st.markdown("")
 view = st.radio(
